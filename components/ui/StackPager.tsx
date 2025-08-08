@@ -13,7 +13,8 @@ export type StackPagerProps<T> = {
 
 export default function StackPager<T>({ items, renderItem, selectedIndex, onIndexChange, loop = false, cardWidth, style }: StackPagerProps<T>) {
   const { width: vw } = useWindowDimensions();
-  const width = cardWidth ?? vw * 0.85;
+  // Make cards wider for a stronger, immersive feel
+  const width = cardWidth ?? vw * 0.95;
   const ref = useRef<ScrollView>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(selectedIndex);

@@ -6,6 +6,7 @@ import { SafeAreaView, StyleSheet, Text, View, Image, Platform, Pressable, Alert
 import LoadingOverlay from './components/LoadingOverlay';
 import StackPager from './components/ui/StackPager';
 import PaginationDots from './components/ui/PaginationDots';
+import VerticalLabel from './components/ui/VerticalLabel';
 import InputTextCard from './components/modality/input/InputTextCard';
 import InputClipboardCard from './components/modality/input/InputClipboardCard';
 import InputAudioCard from './components/modality/input/InputAudioCard';
@@ -427,8 +428,9 @@ export default function App() {
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
             <View style={[styles.section, { flexDirection: 'column' }]}>
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff', marginRight: isPortrait ? 0 : 8 }]}>
+            <VerticalLabel text="input" side="left" />
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Inputs (swipe)</Text>
+              <View />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Open input settings"
@@ -438,7 +440,6 @@ export default function App() {
                 <Text style={styles.iconText}>⚙︎</Text>
               </Pressable>
             </View>
-            <Text style={styles.pill}>Selected: {selectedInput}</Text>
             <StackPager
               items={inputTypes as unknown as string[]}
               selectedIndex={selectedInputIndex}
@@ -460,8 +461,9 @@ export default function App() {
           </View>
           <View style={isPortrait ? styles.dividerHorizontal : styles.dividerVertical} />
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff', marginVertical: 8 }]}>
+            <VerticalLabel text="agent" side="left" />
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Agent (swipe)</Text>
+              <View />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Open agent settings"
@@ -496,8 +498,9 @@ export default function App() {
           </View>
           <View style={isPortrait ? styles.dividerHorizontal : styles.dividerVertical} />
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff', marginLeft: isPortrait ? 0 : 8 }]}>
+            <VerticalLabel text="output" side="left" />
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Outputs (swipe)</Text>
+              <View />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Open output settings"
@@ -507,7 +510,6 @@ export default function App() {
                 <Text style={styles.iconText}>⚙︎</Text>
               </Pressable>
             </View>
-            <Text style={styles.pill}>Selected: {selectedOutput}</Text>
             <StackPager
               items={(selectedAgent ? (['chat','clipboard'] as const).filter((o) => (selectedAgent.produces as any[]).includes(o === 'clipboard' ? 'chat' : o)) : (['chat','clipboard'] as const)) as unknown as string[]}
               selectedIndex={selectedOutputIndex}
@@ -714,17 +716,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
     marginHorizontal: 0,
   },
-  pill: {
-    alignSelf: 'center',
-    backgroundColor: '#6366f1',
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    marginBottom: 8,
-  },
+  pill: { display: 'none' },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',

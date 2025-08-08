@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    minHeight: 120,
+    minHeight: 150,
     ...Platform.select({
       ios: { 
         shadowColor: '#000', 
@@ -38,17 +38,7 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  selected: { 
-    borderColor: '#6366f1',
-    ...Platform.select({
-      ios: { 
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-      },
-      android: { elevation: 8 },
-      default: {},
-    }),
-  },
+  selected: {},
   neighbor: { 
     opacity: 0.95,
   },
@@ -59,4 +49,3 @@ const styles = StyleSheet.create({
     color: '#111827' 
   },
 });
-
