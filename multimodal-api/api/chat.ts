@@ -79,7 +79,6 @@ Be friendly and conversational.`;
         system,
         messages: messages,
         temperature: 0.7,
-        maxTokens: 2000,
       });
       
       // Set CORS headers
@@ -101,7 +100,6 @@ Be friendly and conversational.`;
       system,
       messages: messages,
       temperature: 0.7,
-      maxTokens: 2000,
     });
 
     // Set CORS headers
