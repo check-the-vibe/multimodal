@@ -9,7 +9,7 @@ import InputTextCard from './components/modality/input/InputTextCard';
 import OutputChatPanel from './components/modality/output/OutputChatPanel';
 import ChatComposer from './components/composer/ChatComposer';
 import { streamChat } from './services/agentClient';
-import { API_BASE_URL } from './services/config';
+import { API_BASE_URL, MULTIMODAL_API_KEY } from './services/config';
 
 // Keep the splash screen visible while we bootstrap the app
 if (Platform.OS !== 'web') {

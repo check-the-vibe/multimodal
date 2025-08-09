@@ -6,6 +6,9 @@ import { Platform } from 'react-native';
 // Feature flag to enable/disable AI SDK
 export const AI_SDK_ENABLED = true; // Set to true to use real AI, false for mock
 
+// API Key for authentication - IMPORTANT: Use environment variable in production!
+export const MULTIMODAL_API_KEY = process.env.EXPO_PUBLIC_MULTIMODAL_API_KEY || 'mm_469eade2349b909e92b789cf1533dc3592f08480d9f6a0794ba09b94ac29669d';
+
 // API Base URL - Your Vercel deployment URL
 const getLocalAPIUrl = () => {
   // Only use localhost for web browser in development

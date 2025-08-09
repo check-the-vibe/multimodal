@@ -5,6 +5,11 @@
 - Repo state: Milestone A (Loading → Stacked Chat I/O) is implemented in `App.tsx` and related components with tests in `__tests__/`.
 - Reference: See `.vibe/TASKS.md` for the active sequence and acceptance criteria.
 
+## General Update — 2025-08-09
+- Summary: The app now boots with a 3s in‑app loader, lands on a chat‑first screen, and streams responses via a mocked `agentClient`. The layout favors simplicity (two stacked sections with expand-on-tap for Input and Output), ready for inserting the Agent section next.
+- DX: Expo scripts stabilized (`npm start`, `npm run web`), Jest preset (`jest-expo`) confirmed, and TypeScript types aligned with React 19/RN 0.79.
+- Scope Trim: Deferred non-essential modality wiring (audio/photo/video) and full pager polish to keep momentum on Agent filtering (Milestone B). Current Input uses text; Output renders chat with incremental updates.
+
 ## What’s Shipped (Milestone A)
 - Loader: In‑app overlay shows for 3s on launch; native splash hides on first layout.
 - Landing UI: Chat‑first, with two stacked panels — Input (top) and Output (bottom).
@@ -46,8 +51,8 @@
   - `[LEAD→QA] Add loading timeout + render smoke tests.`
   - `[LEAD→DOCS] Update README usage for new flow.`
 - Monitor:
-  - `tmux capture-pane -pt codex-team:features -S -200`
-  - `tmux capture-pane -pt codex-team:qa -S -200`
+- `tmux capture-pane -pt codex-team:features -S -200`
+- `tmux capture-pane -pt codex-team:qa -S -200`
 
 ## Sign‑off Checklist (A)
 - [x] Loader overlay persists 3s reliably.
@@ -65,3 +70,8 @@
 - Services: `services/agentClient.ts`, `services/config.ts`.
 - Tasks: `.vibe/TASKS.md`. Docs: `.vibe/docs/*`.
 
+## Changelog (since last notes)
+- UI: Simplified stacked layout with expand-on-tap; defers full pager polish until Agent section lands.
+- Streaming: `agentClient.streamChat` mocks streaming with chunked words; non-streaming AI SDK fallback chunk-simulates server replies.
+- Tests: Added/updated smoke and behavior tests under `__tests__/`; Jest preset is `jest-expo` in `package.json`.
+- DX: Clarified scripts (dev server on 8081), reinforced “minimal dependencies” policy.

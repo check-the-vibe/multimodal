@@ -28,6 +28,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // Check API key authentication
+  const apiKey = req.headers['x-api-key'] as string;
+  const validApiKey = process.env.MULTIMODAL_API_KEY;
+  
+  if (!validApiKey) {
+    console.error('MULTIMODAL_API_KEY not configured in environment');
+    res.status(500).json({ error: 'API authentication not configured' });
+    return;
+  }
+  
+  if (!apiKey || apiKey !== validApiKey) {
+    console.log('Invalid API key attempted');
+    res.status(401).json({ error: 'Unauthorized - Invalid API key' });
+    return;
+  }
+
   try {
     const { 
       messages, 

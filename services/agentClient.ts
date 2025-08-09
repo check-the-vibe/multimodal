@@ -1,7 +1,7 @@
 // Agent client - uses AI SDK when enabled, falls back to mock
 // In production, calls your server proxy (e.g., /api/agent/chat) which talks to OpenAI/Anthropic/Google.
 
-import { AI_SDK_ENABLED, apiUrl } from './config';
+import { AI_SDK_ENABLED, apiUrl, MULTIMODAL_API_KEY } from './config';
 
 export type ChatRequest = {
   model: string;
@@ -43,6 +43,7 @@ export async function streamChat(req: ChatRequest, onChunk: ChatStreamHandler): 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': MULTIMODAL_API_KEY,
       },
       body: JSON.stringify({
         messages,
