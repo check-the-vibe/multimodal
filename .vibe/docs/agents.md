@@ -1,5 +1,8 @@
 Title: Agent Capabilities and Filtering
 
+Related
+- Team Lead session notes: `./team-lead-session.md`
+
 Overview
 - Agents sit between Inputs and Outputs. They accept certain input capabilities and can produce certain outputs.
 - The UI filters Agents based on the selected Input; selecting an Agent filters Outputs to those it can produce.
@@ -51,4 +54,3 @@ UI Notes
 - Agent section mirrors Inputs/Outputs: pager + dots + section header.
 - AgentCard should show accepts/produces badges and a "Coming soon" pill when disabled.
 - Selecting an agent that yields no outputs should be prevented by filtering; ensure at least one output remains selectable.
-

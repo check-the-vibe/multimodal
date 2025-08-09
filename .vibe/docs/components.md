@@ -1,5 +1,8 @@
 Title: Component Inventory and Contracts
 
+Related
+- Team Lead session notes: `./team-lead-session.md`
+
 Overview
 - This document lists reusable components for the 3s loader → stacked chat I/O milestone.
 - Each entry covers responsibility, props, events, styling, and a brief usage example.
@@ -177,4 +180,3 @@ Acceptance for Docs (Task 0)
 - All components above documented with props and intent.
 - Examples compile conceptually and map to current app state/handlers.
 - Ready for FEATURES to scaffold code with minimal ambiguity.
-

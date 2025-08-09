@@ -4,7 +4,7 @@ This is the API server for the Multimodal Expo app, providing AI chat functional
 
 ## Production URL
 
-https://multimodal-api-sandy.vercel.app/
+https://multimodal-teal.vercel.app/
 
 ## Local Development
 

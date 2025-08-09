@@ -9,6 +9,7 @@ import InputTextCard from './components/modality/input/InputTextCard';
 import OutputChatPanel from './components/modality/output/OutputChatPanel';
 import ChatComposer from './components/composer/ChatComposer';
 import { streamChat } from './services/agentClient';
+import { API_BASE_URL } from './services/config';
 
 // Keep the splash screen visible while we bootstrap the app
 if (Platform.OS !== 'web') {
@@ -85,10 +86,36 @@ export default function App() {
     setTextInput('');
   };
 
+  // Network test function for debugging
+  const testNetwork = async () => {
+    const testUrl = API_BASE_URL + '/api/test';
+    console.log('[Network Test] Testing connectivity to:', testUrl);
+    
+    try {
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      console.log('[Network Test] Response status:', response.status);
+      const data = await response.text();
+      console.log('[Network Test] Response data:', data);
+      
+      Alert.alert('Network Test Success', `Connected to: ${testUrl}\nStatus: ${response.status}\nResponse: ${data.substring(0, 100)}`);
+    } catch (error: any) {
+      console.error('[Network Test] Failed:', error);
+      Alert.alert('Network Test Failed', `URL: ${testUrl}\n\nError: ${error.message}\n\nDetails: ${error.toString()}`);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
       <View style={styles.headerBar}>
-        <View style={styles.headerBack} />
+        <Pressable style={styles.headerBack} onPress={testNetwork}>
+          <Text style={{ fontSize: 12 }}>🔧</Text>
+        </Pressable>
         <Image
           source={require('./assets/splash.png')}
           style={styles.headerLogo}

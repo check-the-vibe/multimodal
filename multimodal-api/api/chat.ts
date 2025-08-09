@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText, generateText } from 'ai';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Enable CORS for your Expo app
@@ -64,9 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         break;
     }
 
-    // Convert messages to core format
-    const coreMessages = convertToCoreMessages(messages);
-
     // System prompt for consistent behavior
     const system = `You are a helpful AI assistant with multi-modal capabilities. 
 You can process text, images, and other file types. 
@@ -75,11 +72,34 @@ Be friendly and conversational.`;
 
     console.log('Calling AI model...');
 
+    // For non-streaming response (simpler for debugging)
+    if (!stream) {
+      const { text } = await generateText({
+        model: selectedModel,
+        system,
+        messages: messages,
+        temperature: 0.7,
+        maxTokens: 2000,
+      });
+      
+      // Set CORS headers
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
+      
+      res.status(200).json({ 
+        message: text,
+        provider,
+        model: model || 'default'
+      });
+      return;
+    }
+
     // Stream the response
     const result = streamText({
       model: selectedModel,
       system,
-      messages: coreMessages,
+      messages: messages,
       temperature: 0.7,
       maxTokens: 2000,
     });

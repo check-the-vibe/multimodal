@@ -31,5 +31,6 @@
   ],
   "github": {
     "silent": true
-  }
+  },
+  "rootDirectory": "."
 }

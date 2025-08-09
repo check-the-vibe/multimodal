@@ -1,27 +1,39 @@
 /**
  * Configuration for AI SDK integration
  */
+import { Platform } from 'react-native';
 
 // Feature flag to enable/disable AI SDK
 export const AI_SDK_ENABLED = true; // Set to true to use real AI, false for mock
 
 // API Base URL - Your Vercel deployment URL
-// For iOS simulator, use your machine's IP instead of localhost
 const getLocalAPIUrl = () => {
-  // iOS simulator needs the machine's IP address
+  // Only use localhost for web browser in development
   if (__DEV__) {
-    // Check if we're in a web browser
-    if (typeof window !== 'undefined') {
-      // In web browser, always use localhost
+    // Use Platform API for accurate detection
+    const isWeb = Platform.OS === 'web';
+    
+    if (isWeb) {
+      console.log('[Config] Using localhost for web browser development');
       return 'http://localhost:3000';
+    } else {
+      // React Native (iOS/Android) - use Vercel URL
+      console.log('[Config] Using Vercel URL for mobile development (Platform:', Platform.OS, ')');
+      return 'https://multimodal-teal.vercel.app';
     }
-    // In React Native (iOS/Android), use machine IP
-    return 'http://10.0.1.116:3000';
   }
-  return 'https://multimodal-api-sandy.vercel.app';
+  
+  // Production always uses Vercel
+  console.log('[Config] Using production Vercel URL');
+  return 'https://multimodal-teal.vercel.app';
 };
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || getLocalAPIUrl();
+
+// Debug logging
+console.log('[Config] Final API_BASE_URL:', API_BASE_URL);
+console.log('[Config] Platform.OS:', Platform.OS);
+console.log('[Config] Dev mode:', __DEV__ ? 'Yes' : 'No');
 
 
 // Helper to generate full API URLs

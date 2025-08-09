@@ -32,6 +32,13 @@ export async function streamChat(req: ChatRequest, onChunk: ChatStreamHandler): 
   // Use real AI SDK streaming
   try {
     const url = apiUrl('/api/chat');
+    console.log('[agentClient] Starting request to:', url);
+    console.log('[agentClient] Request details:', {
+      messages: messages.length,
+      model: model || 'gpt-4o-mini',
+      lastMessage: messages[messages.length - 1]?.content?.substring(0, 50)
+    });
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -45,13 +52,29 @@ export async function streamChat(req: ChatRequest, onChunk: ChatStreamHandler): 
       }),
     });
 
+    console.log('[agentClient] Response status:', response.status);
+    console.log('[agentClient] Response headers:', response.headers);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      const errorText = await response.text();
+      console.error('[agentClient] Error response body:', errorText);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText || 'Unknown error' };
+      }
       throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
     // Handle non-streaming response
     const data = await response.json();
+    console.log('[agentClient] Response data:', {
+      hasMessage: !!data.message,
+      messageLength: data.message?.length,
+      provider: data.provider,
+      model: data.model
+    });
     
     const fullMessage = data.message || data.text || '';
     
@@ -65,9 +88,26 @@ export async function streamChat(req: ChatRequest, onChunk: ChatStreamHandler): 
 
     return fullMessage;
   } catch (error: any) {
-    console.error('AI SDK streaming error:', error);
+    console.error('[agentClient] Network error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+      url: apiUrl('/api/chat')
+    });
+    
+    // More detailed error message for debugging
+    let errorDetails = `Network Error: ${error.message}`;
+    if (error.message.includes('Network request failed')) {
+      errorDetails += '\n\nPossible causes:\n';
+      errorDetails += '- iOS device cannot reach ' + apiUrl('/api/chat') + '\n';
+      errorDetails += '- Local server not running on port 3000\n';
+      errorDetails += '- Firewall blocking connection\n';
+      errorDetails += '- Wrong IP address configured\n';
+    }
+    
     // Fallback to mock on error
-    const errorMessage = `Error: ${error.message}. Falling back to echo...`;
+    const errorMessage = `${errorDetails}\n\nFalling back to echo mode...`;
     onChunk(errorMessage);
     return errorMessage;
   }
