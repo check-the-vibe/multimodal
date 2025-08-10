@@ -1,11 +1,10 @@
-<bugs>
-
-CREATE-01: Image output card does not seem to work, shows a blacked-out image, with a save icon that does not work appropriately
-
-</bugs>
-
-
-
-<resolved>
-- The swiping behaviour for the inputs, and each of the options for the agents should be the same. should be the same ux, same approach, we need to split these all out into their own cards please. We will be going card by card to check each one is working. Take your time to fix this its important to get this right. 
-- When a user swipes the agents, the options available for input and output should filter, based on what inputs and outputs a card expects. For instance, a chat input and text output will both take an input as text (for output card), as well as output text from our input card. For the other modalities, we will need to filter this appropriately, based on what different inputs are avilable.
+<outcome>
+I need to generate a ui library of components for my expo/react/nextjs(api) ios/android app. Based on what you can see, focus on recent articles where possible given how quickly this technology landscape is changing. 
+What is the best way to create assets that are able to be imported by an expo/react ios application, with a nextjs backend for api calls? We want to use a lot of different components, including the ability to capture, text, photo, camera, video, audio, and more, and respond to the user with a similar audio and video-based design. In general, there are 3 main categories (inputs, agents, and outputs) that you can add to a catalog. Each catalog contains the inputs available to the user, and they can ship through those to pick (top-3rd), the agents represent ai platforms, and corresponding services/data/other enhancements, which represent the “intelligence” and “instruction” being generated based on the input (middle third). The outputs represent a way to render content quickly and easily (a chat interface, to a video/image viewer, conversation-style audio feedback and standard “playback”. In addition, this app will take a look at files and folders on the ipad, and help the user use the AI systems to help ‘do interesting things with their files”. 
+In the case of text and audio, the “live mode” vs. “one-shot” mode should be represented on a per-(input-agent-output) chain. 
+inputs, agents, and outputs have ‘compatible interfaces’ they can use with agents. The available APIs for the platform dictate the available agent types, and the inputs and outputs must map to this type. For example, pasting text from the current clipboard pushing “text” to the agent, DALLE takes in text, and outputs a static image, You might choose to view an image (or text) that is created as a one-off, you might also choose for these and other similar use cases to immediately save that type (text/image/video/audio) directly to disk. This will need to be accounted for in the design.
+Based on this, help me achieve my outcome. Think through what i’m trying to do before you respond, help me step by step, ensure that i understand your requests.
+</outcome>
+<tasks>
+# We will be building this project's front-end from the ground up. We should be using a design system and we should be carefully approaching building components, and other elements that are necessary to develop a beautiful, engaging, and popular ios application.
+</tasks>
