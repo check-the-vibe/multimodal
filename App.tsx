@@ -46,7 +46,7 @@ export default function App() {
   // Core interface state
   const [inputExpanded, setInputExpanded] = useState(false);
   const [agentExpanded, setAgentExpanded] = useState(false);
-  const [outputExpanded, setOutputExpanded] = useState(false);
+  const [outputExpanded, setOutputExpanded] = useState(true); // Default to expanded so users can swipe
   const [textInput, setTextInput] = useState('');
   const [selectedInputIndex, setSelectedInputIndex] = useState(0);
   const [isSending, setIsSending] = useState(false);
@@ -143,11 +143,6 @@ export default function App() {
     if (!textInput.trim() || !appSettings || isSending) return;
     
     setIsSending(true);
-    
-    // Expand output section when sending first message
-    if (!outputExpanded) {
-      setOutputExpanded(true);
-    }
     
     const inputText = textInput.trim();
     const selectedOutput = outputTypes[selectedOutputIndex];
@@ -390,10 +385,14 @@ export default function App() {
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
             <VerticalLabel text="output" side="left" />
             {!outputExpanded ? (
-              <View style={styles.iconContainer}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show outputs"
+                onPress={() => setOutputExpanded(true)}
+                style={styles.iconContainer}
+              >
                 <Text style={styles.chatIcon}>🗨️</Text>
-                <Text style={styles.hintSmall}>Swipe outputs after sending</Text>
-              </View>
+              </Pressable>
             ) : (
               <>
                 <StackPager
