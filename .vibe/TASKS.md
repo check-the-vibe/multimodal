@@ -77,7 +77,244 @@ Created comprehensive documentation for parallel AI development sessions.
 - **Deployment**: Automatic via Vercel on push to main
 - **Monitoring**: Check Vercel dashboard for logs and usage
 
-## 📋 Future Tasks (Not Started)
+## 📋 Next Phase Tasks
+
+### 📐 Card Definition Phase
+
+**Goal**: Define the interface, behavior, and contracts for all cards before implementation.
+
+**Shared Definitions**:
+1. [ ] Define base card interface
+   - Collapsed state (icon + hint)
+   - Expanded state (full UI)
+   - State management pattern
+   - Animation/transition specs
+
+2. [ ] Define common types
+   - `InputType`: 'text' | 'image' | 'audio' | 'file' | 'drawing'
+   - `OutputType`: 'chat' | 'audio' | 'image' | 'code' | 'table'
+   - `CardState`: 'collapsed' | 'expanding' | 'expanded' | 'collapsing'
+   - Message format for all card communications
+
+3. [ ] Define card template structure
+   - Header (title, settings icon)
+   - Body (main content area)
+   - Footer (action buttons, status)
+   - Send trigger mechanism (Enter key or Send icon)
+
+**Input Card Definitions**:
+1. [ ] TextInputCard
+   - Single text area (multiline)
+   - No submit button in card (template provides)
+   - Enter key behavior (shift+enter for newline)
+   - Character limit indicator
+   - Placeholder text
+
+2. [ ] ImageInputCard
+   - Image preview area
+   - Source selector (camera/gallery/URL)
+   - Compression settings
+   - Caption field (optional)
+   - Max size/dimensions
+
+3. [ ] AudioInputCard
+   - Recording controls (start/stop/pause)
+   - Waveform visualization
+   - Duration indicator
+   - Playback preview
+   - Format selection
+
+4. [ ] FileInputCard
+   - Drop zone or picker
+   - File type restrictions
+   - Size limits
+   - Preview for supported types
+   - Multiple file support
+
+**Agent Card Definition**:
+1. [ ] AgentCard interface
+   - Collapsed: 🤖 + "OpenAI GPT-4"
+   - Expanded: Model info + status
+   - Settings access (gear icon)
+   - Processing indicator
+   - Error state display
+
+2. [ ] Settings panel spec
+   - Model dropdown
+   - Temperature slider
+   - Response length
+   - System prompt area
+   - Save/reset buttons
+
+**Output Card Definitions**:
+1. [ ] ChatOutputCard
+   - Message list (scrollable)
+   - Message bubbles (user/assistant)
+   - Timestamp display
+   - Copy message action
+   - Clear history option
+
+2. [ ] AudioOutputCard
+   - Playback controls
+   - Progress bar
+   - Volume control
+   - Download option
+   - Transcript display
+
+3. [ ] ImageOutputCard
+   - Image display area
+   - Zoom/pan controls
+   - Download button
+   - Metadata display
+   - Gallery view for multiple
+
+4. [ ] CodeOutputCard
+   - Syntax highlighting
+   - Language selector
+   - Copy button
+   - Line numbers
+   - Collapse/expand sections
+
+**Card Communication Protocol**:
+1. [ ] Define message flow
+   - Input → Agent (with type)
+   - Agent → Output (with type)
+   - Error propagation
+   - Status updates
+
+2. [ ] Define send mechanism
+   - Trigger: Enter key OR Send icon
+   - Validation before send
+   - Loading states
+   - Success/error feedback
+
+**Deliverable**: `.vibe/docs/card-specifications.md` with complete interface definitions
+
+### 🔬 Research Phase: Vercel AI SDK Modalities
+
+**Goal**: Identify all possible input/output types supported by Vercel AI SDK v5 for comprehensive card implementation.
+
+**Research Tasks**:
+1. [ ] Document all supported input modalities in AI SDK
+   - Text input (basic messages)
+   - Image input (base64, URLs)
+   - File attachments support
+   - Audio input capabilities
+   - Tool/function calling inputs
+   - System prompts and context
+
+2. [ ] Document all supported output modalities
+   - Text streaming
+   - Tool/function call responses
+   - Image generation endpoints
+   - Audio/speech generation
+   - Embeddings generation
+   - Structured data outputs (JSON mode)
+
+3. [ ] Document OpenAI-specific capabilities
+   - GPT-4 Vision for image understanding
+   - DALL-E for image generation
+   - Whisper for speech-to-text
+   - TTS for text-to-speech
+   - Model-specific limitations
+
+4. [ ] Create modality compatibility matrix
+   - Which inputs work with which OpenAI models
+   - Which outputs are available from OpenAI
+   - Rate limits and size constraints
+
+**Deliverable**: `.vibe/docs/ai-sdk-modalities.md` with complete capability mapping
+
+### 🎴 Card Implementation Phase
+
+**Goal**: Create input/output cards for each supported modality.
+
+**Input Cards to Implement**:
+1. [ ] TextInputCard (✅ exists - enhance)
+2. [ ] ImageInputCard (camera/gallery/URL)
+3. [ ] AudioInputCard (recording/upload)
+4. [ ] FileInputCard (document picker)
+5. [ ] DrawingInputCard (canvas/sketch)
+6. [ ] ClipboardInputCard (paste rich content)
+
+**Output Cards to Implement**:
+1. [ ] ChatOutputCard (✅ exists - enhance)
+2. [ ] AudioOutputCard (✅ TTS exists - enhance)
+3. [ ] ImageOutputCard (display generated images)
+4. [ ] CodeOutputCard (syntax highlighted)
+5. [ ] TableOutputCard (structured data)
+6. [ ] ChartOutputCard (data visualization)
+7. [ ] FileOutputCard (downloadable content)
+
+### 🤖 Agent Section Restoration
+
+**Goal**: Re-add Agent selection between Input and Output with OpenAI as default.
+
+**Implementation Tasks**:
+1. [ ] Restore Agent section in UI layout
+   - Position between Input and Output sections
+   - Consistent card styling with expand/collapse
+   - Icon: 🤖 when collapsed
+
+2. [ ] Create AgentCard component
+   - Display OpenAI as provider
+   - Show selected model (gpt-4o-mini, gpt-4o, etc.)
+   - Status indicator (ready/processing/error)
+   - Settings gear icon
+
+3. [ ] Implement Agent Settings Panel
+   - Model selector dropdown
+   - Temperature slider (0.0 - 2.0)
+   - Max tokens input
+   - Top-p parameter
+   - Frequency penalty
+   - Presence penalty
+   - System prompt editor
+
+4. [ ] Wire Agent configuration
+   - Pass settings to API calls
+   - Persist preferences in AsyncStorage
+   - Validate settings per model
+
+**UI Flow**:
+```
+Input (expanded) → Agent (collapsed 🤖) → Output (expanded)
+                    ↓ tap
+              Agent Settings Panel
+```
+
+### 🎛️ Settings Management
+
+**Goal**: Comprehensive settings interface for agent configuration.
+
+**Settings Categories**:
+1. [ ] Model Settings
+   - Model selection (gpt-4o-mini, gpt-4o, gpt-4-turbo)
+   - Advanced parameters (temperature, top-p, etc.)
+
+2. [ ] Response Settings
+   - Streaming enabled/disabled
+   - Response length preferences
+   - Language preferences
+   - Output format (markdown, plain text, code)
+
+3. [ ] UI Settings
+   - Theme (light/dark)
+   - Text size
+   - Animation speed
+   - Auto-expand preferences
+
+4. [ ] API Settings
+   - Custom API endpoint
+   - Timeout configuration
+   - Retry logic settings
+   - Cache preferences
+
+**Implementation**:
+- Settings accessed via ⚙️ icon in Agent card
+- Modal or slide-out panel
+- Real-time preview of changes
+- Reset to defaults option
 
 ### ✅ Task: Inputs/Outputs/Agents Types + TTS Output Card
 
@@ -117,10 +354,10 @@ Acceptance Criteria
 - [ ] Add loading states during API calls
 
 ### Feature Additions:
-- [ ] Support for Anthropic Claude models
-- [ ] Support for Google Gemini models
 - [ ] Voice input using expo-speech
-- [ ] Image input support
+- [ ] Image input support for GPT-4 Vision
+- [ ] Image generation with DALL-E
+- [ ] Speech-to-text with Whisper
 - [ ] Conversation export functionality
 
 ### Infrastructure:
