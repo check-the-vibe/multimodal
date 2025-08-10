@@ -22,6 +22,7 @@ import OutputChartPanel from './components/modality/output/OutputChartPanel';
 import OutputFilePanel from './components/modality/output/OutputFilePanel';
 import StackPager from './components/ui/StackPager';
 import PaginationDots from './components/ui/PaginationDots';
+import FilteredPaginationDots from './components/ui/FilteredPaginationDots';
 import TextAgentCard from './components/modality/agent/TextAgentCard';
 import VisionAgentCard from './components/modality/agent/VisionAgentCard';
 import CreateAgentCard from './components/modality/agent/CreateAgentCard';
@@ -37,6 +38,14 @@ import { parseOutputs } from './services/parseOutput';
 import type { OutputType } from './components/types';
 import { API_BASE_URL } from './services/config';
 import { loadSettings, saveSettings, type AppSettings } from './services/settingsStorage';
+import { 
+  filterInputTypes, 
+  filterOutputTypes, 
+  getDefaultInput, 
+  getDefaultOutput,
+  type InputType as InputTypeConfig,
+  type OutputType as OutputTypeConfig
+} from './services/agentModeConfig';
 
 // Keep the splash screen visible while we bootstrap the app
 if (Platform.OS !== 'web') {
@@ -55,9 +64,21 @@ export default function App() {
   const agentTypes: AgentMode[] = ['text', 'vision', 'create', 'transcribe', 'speak', 'code'];
   const [textInput, setTextInput] = useState('');
   const [selectedInputIndex, setSelectedInputIndex] = useState(0);
+  const [selectedOutputIndex, setSelectedOutputIndex] = useState(0);
   const [isSending, setIsSending] = useState(false);
-  const inputTypes = ['text', 'image', 'audio', 'file', 'drawing', 'clipboard'] as const;
-  type InputType = typeof inputTypes[number];
+  
+  // All available types
+  const allInputTypes = ['text', 'image', 'audio', 'file', 'drawing', 'clipboard'] as const;
+  const allOutputTypes: OutputType[] = ['chat', 'audio', 'image', 'code', 'table', 'chart', 'file'];
+  type InputType = typeof allInputTypes[number];
+  
+  // Get current agent mode
+  const currentAgentMode = agentTypes[selectedAgentIndex];
+  
+  // Filter input and output types based on current agent mode
+  const inputTypes = filterInputTypes([...allInputTypes], currentAgentMode) as InputType[];
+  const outputTypes = filterOutputTypes(allOutputTypes, currentAgentMode) as OutputType[];
+  
   const [inputData, setInputData] = useState<Record<InputType, unknown>>({ 
     text: '', 
     image: null, 
@@ -66,11 +87,23 @@ export default function App() {
     drawing: null, 
     clipboard: null 
   });
+  
+  // Ensure selected indices are valid for filtered types
+  useEffect(() => {
+    if (selectedInputIndex >= inputTypes.length) {
+      setSelectedInputIndex(0);
+    }
+  }, [inputTypes.length, selectedInputIndex]);
+  
+  useEffect(() => {
+    if (selectedOutputIndex >= outputTypes.length) {
+      setSelectedOutputIndex(0);
+    }
+  }, [outputTypes.length, selectedOutputIndex]);
+  
   const [chatMessages, setChatMessages] = useState<string[]>([]);
-  const [selectedOutputIndex, setSelectedOutputIndex] = useState(0);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
-  const outputTypes: OutputType[] = ['chat', 'audio', 'image', 'code', 'table', 'chart', 'file'];
   const [ttsStatus, setTtsStatus] = useState<'idle' | 'speaking' | 'error'>('idle');
   // Demo data for new output cards
   const [lastImage, setLastImage] = useState<string | null>(null);
@@ -436,10 +469,19 @@ export default function App() {
                     ) : null
               )}
             />
-            <PaginationDots
-              count={inputTypes.length}
-              index={selectedInputIndex}
+            <FilteredPaginationDots
+              allItems={[...allInputTypes]}
+              filteredItems={inputTypes}
+              selectedIndex={selectedInputIndex}
               onDotPress={setSelectedInputIndex}
+              icons={{
+                text: '✏️',
+                image: '🖼️',
+                audio: '🎤',
+                file: '📁',
+                drawing: '🎨',
+                clipboard: '📋'
+              }}
             />
           </View>
           {/* Agent Section */}
@@ -451,6 +493,26 @@ export default function App() {
               onIndexChange={(index) => {
                 setSelectedAgentIndex(index);
                 const newMode = agentTypes[index];
+                
+                // Update input/output indices to compatible defaults
+                const compatibleInputs = filterInputTypes([...allInputTypes], newMode);
+                const defaultInput = getDefaultInput(newMode);
+                const newInputIndex = compatibleInputs.indexOf(defaultInput as InputType);
+                if (newInputIndex !== -1) {
+                  setSelectedInputIndex(newInputIndex);
+                } else {
+                  setSelectedInputIndex(0);
+                }
+                
+                const compatibleOutputs = filterOutputTypes(allOutputTypes, newMode);
+                const defaultOutput = getDefaultOutput(newMode);
+                const newOutputIndex = compatibleOutputs.indexOf(defaultOutput as OutputType);
+                if (newOutputIndex !== -1) {
+                  setSelectedOutputIndex(newOutputIndex);
+                } else {
+                  setSelectedOutputIndex(0);
+                }
+                
                 if (appSettings) {
                   const newSettings = getDefaultSettingsForMode(newMode);
                   handleSettingsChange({
@@ -530,10 +592,20 @@ export default function App() {
                     ) : null
               )}
             />
-            <PaginationDots
-              count={outputTypes.length}
-              index={selectedOutputIndex}
+            <FilteredPaginationDots
+              allItems={allOutputTypes}
+              filteredItems={outputTypes}
+              selectedIndex={selectedOutputIndex}
               onDotPress={setSelectedOutputIndex}
+              icons={{
+                chat: '💬',
+                audio: '🔊',
+                image: '🖼️',
+                code: '💻',
+                table: '📊',
+                chart: '📈',
+                file: '📄'
+              }}
             />
           </View>
             </View>
