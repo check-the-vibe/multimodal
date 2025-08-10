@@ -5,10 +5,11 @@ import VerticalLabel from '../../ui/VerticalLabel';
 export type AgentCardProps = {
   expanded: boolean;
   onToggle: () => void;
+  provider?: string;
   children?: React.ReactNode;
 };
 
-export default function AgentCard({ expanded, onToggle, children }: AgentCardProps) {
+export default function AgentCard({ expanded, onToggle, provider = 'OpenAI', children }: AgentCardProps) {
   return (
     <View style={[styles.container, { backgroundColor: '#ffffff' }]}>
       <VerticalLabel text="agent" side="left" />
@@ -20,10 +21,17 @@ export default function AgentCard({ expanded, onToggle, children }: AgentCardPro
           style={styles.iconContainer}
         >
           <Text style={styles.agentIcon}>🤖</Text>
+          <Text style={styles.providerName}>{provider}</Text>
           <Text style={styles.hintSmall}>Tap to configure</Text>
         </Pressable>
       ) : (
         <View style={styles.expandedContent}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Agent Settings</Text>
+            <Pressable onPress={onToggle} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </Pressable>
+          </View>
           {children}
         </View>
       )}
@@ -50,6 +58,12 @@ const styles = StyleSheet.create({
     fontSize: 48,
     marginBottom: 8,
   },
+  providerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
   hintSmall: {
     color: '#666',
     textAlign: 'center',
@@ -58,5 +72,27 @@ const styles = StyleSheet.create({
   },
   expandedContent: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#6b7280',
+    fontWeight: '600',
   },
 });

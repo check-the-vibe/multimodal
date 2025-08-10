@@ -5,9 +5,10 @@ import ModalityCard from '../../ui/ModalityCard';
 
 export type ImageInputCardProps = {
   onImageSelect?: (uri: string) => void;
+  onSend?: () => void;
 };
 
-export default function ImageInputCard({ onImageSelect }: ImageInputCardProps) {
+export default function ImageInputCard({ onImageSelect, onSend }: ImageInputCardProps) {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [inputMode, setInputMode] = useState<'buttons' | 'url'>('buttons');
@@ -90,9 +91,16 @@ export default function ImageInputCard({ onImageSelect }: ImageInputCardProps) {
         {imageUri ? (
           <View style={styles.imageContainer}>
             <Image source={{ uri: imageUri }} style={styles.image} />
-            <TouchableOpacity style={styles.clearButton} onPress={clearImage}>
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
+            <View style={styles.imageActions}>
+              <TouchableOpacity style={styles.clearButton} onPress={clearImage}>
+                <Text style={styles.clearButtonText}>✕ Clear</Text>
+              </TouchableOpacity>
+              {onSend && (
+                <TouchableOpacity style={styles.sendButton} onPress={onSend}>
+                  <Text style={styles.sendButtonText}>Send ➤</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         ) : (
           <>
@@ -173,21 +181,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     resizeMode: 'cover',
   },
+  imageActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10,
+  },
   clearButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   clearButtonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sendButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    flex: 1,
+    alignItems: 'center',
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   urlContainer: {
     padding: 10,

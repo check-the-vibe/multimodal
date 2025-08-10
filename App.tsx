@@ -22,7 +22,6 @@ import OutputChartPanel from './components/modality/output/OutputChartPanel';
 import OutputFilePanel from './components/modality/output/OutputFilePanel';
 import StackPager from './components/ui/StackPager';
 import PaginationDots from './components/ui/PaginationDots';
-import ChatComposer from './components/composer/ChatComposer';
 import AgentCard from './components/modality/agent/AgentCard';
 import AgentSettingsPanel from './components/modality/agent/AgentSettingsPanel';
 import SettingsModal from './components/settings/SettingsModal';
@@ -319,27 +318,33 @@ export default function App() {
                     type === 'text' ? (
                       <InputTextCard 
                         value={textInput} 
-                        onChange={setTextInput} 
+                        onChange={setTextInput}
+                        onSend={handleSend}
                       />
                     ) : type === 'image' ? (
                       <ImageInputCard 
-                        onImageSelect={(uri) => setInputData(prev => ({ ...prev, image: uri }))} 
+                        onImageSelect={(uri) => setInputData(prev => ({ ...prev, image: uri }))}
+                        onSend={handleSend}
                       />
                     ) : type === 'audio' ? (
                       <AudioInputCard 
-                        onAudioSelect={(uri) => setInputData(prev => ({ ...prev, audio: uri }))} 
+                        onAudioSelect={(uri) => setInputData(prev => ({ ...prev, audio: uri }))}
+                        onSend={handleSend}
                       />
                     ) : type === 'file' ? (
                       <FileInputCard 
-                        onFileSelect={(uri, name) => setInputData(prev => ({ ...prev, file: { uri, name } }))} 
+                        onFileSelect={(uri, name) => setInputData(prev => ({ ...prev, file: { uri, name } }))}
+                        onSend={handleSend}
                       />
                     ) : type === 'drawing' ? (
                       <DrawingInputCard 
-                        onDrawingComplete={(svg) => setInputData(prev => ({ ...prev, drawing: svg }))} 
+                        onDrawingComplete={(svg) => setInputData(prev => ({ ...prev, drawing: svg }))}
+                        onSend={handleSend}
                       />
                     ) : type === 'clipboard' ? (
                       <ClipboardInputCard 
-                        onClipboardPaste={(content, type) => setInputData(prev => ({ ...prev, clipboard: { content, type } }))} 
+                        onClipboardPaste={(content, type) => setInputData(prev => ({ ...prev, clipboard: { content, type } }))}
+                        onSend={handleSend}
                       />
                     ) : null
                   )}
@@ -349,20 +354,18 @@ export default function App() {
                   index={selectedInputIndex}
                   onDotPress={setSelectedInputIndex}
                 />
-                <View style={{ marginTop: 8 }}>
-                  <ChatComposer 
-                    value={textInput} 
-                    onChange={setTextInput} 
-                    onSend={handleSend} 
-                    disabled={false} 
-                  />
-                </View>
               </>
             )}
           </View>
           {/* Agent Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
-            <AgentCard expanded={agentExpanded} onToggle={() => setAgentExpanded(!agentExpanded)}>
+            <AgentCard 
+              expanded={agentExpanded} 
+              onToggle={() => setAgentExpanded(!agentExpanded)}
+              provider={appSettings?.agent.provider ? 
+                appSettings.agent.provider.charAt(0).toUpperCase() + appSettings.agent.provider.slice(1) : 
+                'OpenAI'}
+            >
               {appSettings && (
                 <AgentSettingsPanel
                   settings={appSettings.agent}

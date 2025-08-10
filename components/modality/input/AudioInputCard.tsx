@@ -6,9 +6,10 @@ import ModalityCard from '../../ui/ModalityCard';
 
 export type AudioInputCardProps = {
   onAudioSelect?: (uri: string) => void;
+  onSend?: () => void;
 };
 
-export default function AudioInputCard({ onAudioSelect }: AudioInputCardProps) {
+export default function AudioInputCard({ onAudioSelect, onSend }: AudioInputCardProps) {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -172,6 +173,11 @@ export default function AudioInputCard({ onAudioSelect }: AudioInputCardProps) {
               <TouchableOpacity style={styles.controlButton} onPress={clearAudio}>
                 <Text style={styles.controlIcon}>🗑️</Text>
               </TouchableOpacity>
+              {onSend && (
+                <TouchableOpacity style={styles.sendButton} onPress={onSend}>
+                  <Text style={styles.sendButtonText}>Send ➤</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         ) : recording ? (
@@ -288,5 +294,16 @@ const styles = StyleSheet.create({
   },
   controlIcon: {
     fontSize: 20,
+  },
+  sendButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
