@@ -588,9 +588,9 @@ export default function App() {
                         generatedImages={generatedImages}
                       />
                     ) : type === 'code' ? (
-                      <OutputCodePanel code={codeSnippet} language={'js'} />
+                      codeSnippet ? <OutputCodePanel code={codeSnippet} language={'js'} /> : <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: '#6b7280' }}>No code output yet</Text></View>
                     ) : type === 'table' ? (
-                      <OutputTablePanel rows={tableRows} title="Items" />
+                      tableRows.length > 0 ? <OutputTablePanel rows={tableRows} title="Items" /> : <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: '#6b7280' }}>No table data yet</Text></View>
                     ) : type === 'chart' ? (
                       <OutputChartPanel data={chartData} title="Distribution" />
                     ) : type === 'file' ? (
