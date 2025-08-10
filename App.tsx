@@ -22,8 +22,12 @@ import OutputChartPanel from './components/modality/output/OutputChartPanel';
 import OutputFilePanel from './components/modality/output/OutputFilePanel';
 import StackPager from './components/ui/StackPager';
 import PaginationDots from './components/ui/PaginationDots';
-import AgentCard from './components/modality/agent/AgentCard';
-import AgentSettingsPanel from './components/modality/agent/AgentSettingsPanel';
+import TextAgentCard from './components/modality/agent/TextAgentCard';
+import VisionAgentCard from './components/modality/agent/VisionAgentCard';
+import CreateAgentCard from './components/modality/agent/CreateAgentCard';
+import TranscribeAgentCard from './components/modality/agent/TranscribeAgentCard';
+import SpeakAgentCard from './components/modality/agent/SpeakAgentCard';
+import CodeAgentCard from './components/modality/agent/CodeAgentCard';
 import type { AgentMode } from './components/modality/agent/AgentModeSelector';
 import type { AgentModeSettings } from './components/modality/agent/AgentModeSettings';
 import { getDefaultSettingsForMode } from './services/settingsStorage';
@@ -47,7 +51,8 @@ export default function App() {
   const { width, height } = useWindowDimensions();
 
   // Core interface state
-  const [agentExpanded, setAgentExpanded] = useState(false);
+  const [selectedAgentIndex, setSelectedAgentIndex] = useState(0);
+  const agentTypes: AgentMode[] = ['text', 'vision', 'create', 'transcribe', 'speak', 'code'];
   const [textInput, setTextInput] = useState('');
   const [selectedInputIndex, setSelectedInputIndex] = useState(0);
   const [isSending, setIsSending] = useState(false);
@@ -90,7 +95,15 @@ export default function App() {
       try {
         // Load saved settings
         const settings = await loadSettings();
-        if (mounted) setAppSettings(settings);
+        if (mounted) {
+          setAppSettings(settings);
+          // Sync agent index with loaded settings
+          const savedMode = settings?.agentMode?.selectedMode || 'text';
+          const modeIndex = agentTypes.indexOf(savedMode as AgentMode);
+          if (modeIndex !== -1) {
+            setSelectedAgentIndex(modeIndex);
+          }
+        }
         // TODO: load fonts/assets here if needed
         await new Promise((res) => setTimeout(res, 600));
         // Best-effort: allow audio playback in iOS silent mode (may help TTS audibility)
@@ -431,34 +444,57 @@ export default function App() {
           </View>
           {/* Agent Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
-            <AgentCard 
-              expanded={agentExpanded} 
-              onToggle={() => setAgentExpanded(!agentExpanded)}
-              selectedMode={appSettings?.agentMode?.selectedMode || 'text'}
-              settings={appSettings?.agentMode?.settings || getDefaultSettingsForMode('text')}
-              onModeChange={(mode: AgentMode) => {
+            <VerticalLabel text="agent" side="left" />
+            <StackPager
+              items={[...agentTypes]}
+              selectedIndex={selectedAgentIndex}
+              onIndexChange={(index) => {
+                setSelectedAgentIndex(index);
+                const newMode = agentTypes[index];
                 if (appSettings) {
-                  const newSettings = getDefaultSettingsForMode(mode);
+                  const newSettings = getDefaultSettingsForMode(newMode);
                   handleSettingsChange({
                     ...appSettings,
                     agentMode: {
-                      selectedMode: mode,
+                      selectedMode: newMode,
                       settings: newSettings,
                     },
                   });
                 }
               }}
-              onSettingsChange={(modeSettings: AgentModeSettings) => {
-                if (appSettings) {
-                  handleSettingsChange({
-                    ...appSettings,
-                    agentMode: {
-                      ...appSettings.agentMode,
-                      settings: modeSettings,
-                    },
-                  });
-                }
+              renderItem={(type, idx, selected) => {
+                const settings = appSettings?.agentMode?.settings || getDefaultSettingsForMode(type);
+                const onSettingsChange = (modeSettings: AgentModeSettings) => {
+                  if (appSettings) {
+                    handleSettingsChange({
+                      ...appSettings,
+                      agentMode: {
+                        ...appSettings.agentMode,
+                        settings: modeSettings,
+                      },
+                    });
+                  }
+                };
+
+                return type === 'text' ? (
+                  <TextAgentCard settings={settings} onSettingsChange={onSettingsChange} />
+                ) : type === 'vision' ? (
+                  <VisionAgentCard settings={settings} onSettingsChange={onSettingsChange} />
+                ) : type === 'create' ? (
+                  <CreateAgentCard settings={settings} onSettingsChange={onSettingsChange} />
+                ) : type === 'transcribe' ? (
+                  <TranscribeAgentCard settings={settings} onSettingsChange={onSettingsChange} />
+                ) : type === 'speak' ? (
+                  <SpeakAgentCard settings={settings} onSettingsChange={onSettingsChange} />
+                ) : type === 'code' ? (
+                  <CodeAgentCard settings={settings} onSettingsChange={onSettingsChange} />
+                ) : null;
               }}
+            />
+            <PaginationDots
+              count={agentTypes.length}
+              index={selectedAgentIndex}
+              onDotPress={setSelectedAgentIndex}
             />
           </View>
           {/* Output Section */}
