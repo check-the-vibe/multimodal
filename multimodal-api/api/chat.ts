@@ -49,15 +49,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       messages, 
       provider = 'openai', 
       model,
+      temperature = 0.7,
+      maxTokens,
       stream = true 
     }: {
       messages: any[];
       provider?: 'openai' | 'anthropic' | 'google';
       model?: string;
+      temperature?: number;
+      maxTokens?: number;
       stream?: boolean;
     } = req.body;
 
-    console.log(`Processing chat request: provider=${provider}, model=${model}, messages=${messages?.length}`);
+    console.log(`Processing chat request: provider=${provider}, model=${model}, temp=${temperature}, maxTokens=${maxTokens}, messages=${messages?.length}`);
 
     // Validate messages
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -80,21 +84,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         break;
     }
 
-    // System prompt for consistent behavior
-    const system = `You are a helpful AI assistant with multi-modal capabilities. 
+    // Extract system prompt from messages if present
+    const systemMessage = messages.find(m => m.role === 'system');
+    const system = systemMessage?.content || `You are a helpful AI assistant with multi-modal capabilities. 
 You can process text, images, and other file types. 
 Provide clear, concise, and helpful responses.
 Be friendly and conversational.`;
+    
+    // Filter out system messages from the messages array (they're handled separately)
+    const userMessages = messages.filter(m => m.role !== 'system');
 
     console.log('Calling AI model...');
 
     // For non-streaming response (simpler for debugging)
     if (!stream) {
       const { text } = await generateText({
-        model: selectedModel,
+        model: selectedModel as any, // Type assertion for compatibility
         system,
-        messages: messages,
-        temperature: 0.7,
+        messages: userMessages,
+        temperature,
+        ...(maxTokens && { maxTokens }),
       });
       
       // Set CORS headers
@@ -112,10 +121,11 @@ Be friendly and conversational.`;
 
     // Stream the response
     const result = streamText({
-      model: selectedModel,
+      model: selectedModel as any, // Type assertion for compatibility
       system,
-      messages: messages,
-      temperature: 0.7,
+      messages: userMessages,
+      temperature,
+      ...(maxTokens && { maxTokens }),
     });
 
     // Set CORS headers

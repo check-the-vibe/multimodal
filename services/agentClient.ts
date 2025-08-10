@@ -4,15 +4,18 @@
 import { AI_SDK_ENABLED, apiUrl, MULTIMODAL_API_KEY } from './config';
 
 export type ChatRequest = {
+  provider?: 'openai' | 'anthropic' | 'google';
   model: string;
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[];
+  temperature?: number;
+  maxTokens?: number;
   images?: string[]; // URLs
 };
 
 export type ChatStreamHandler = (chunk: string) => void;
 
 export async function streamChat(req: ChatRequest, onChunk: ChatStreamHandler): Promise<string> {
-  const { messages, model } = req;
+  const { messages, model, provider = 'openai', temperature = 0.7, maxTokens = 2000 } = req;
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
 
   // Use mock if AI SDK is disabled
@@ -47,8 +50,10 @@ export async function streamChat(req: ChatRequest, onChunk: ChatStreamHandler): 
       },
       body: JSON.stringify({
         messages,
-        provider: 'openai',
+        provider,
         model: model || 'gpt-4o-mini',
+        temperature,
+        maxTokens,
         stream: false, // Use non-streaming for now due to Express 5 issues
       }),
     });

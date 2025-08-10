@@ -91,3 +91,5 @@ Docs
 - Team Lead notes: `.vibe/docs/team-lead-session.md`
 - GPT‑5 prompting: `.vibe/docs/prompting-gpt5.md`
 - Types and routing: `.vibe/docs/types-and-routing.md`
+- AI SDK in Expo: `.vibe/docs/ai-sdk-expo.md`
+- AI SDK modalities & capabilities: `.vibe/docs/ai-sdk-modalities.md`

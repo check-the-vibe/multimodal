@@ -1,5 +1,5 @@
 export type InputType = 'text' | 'clipboard' | 'audio' | 'photo' | 'video';
-export type OutputType = 'chat' | 'clipboard' | 'audio' | 'image';
+export type OutputType = 'chat' | 'clipboard' | 'audio' | 'image' | 'code' | 'table' | 'chart' | 'file';
 
 // Agent-related capabilities (normalized)
 export type CapabilityInput = 'text' | 'audio' | 'image' | 'video';

@@ -1,21 +1,36 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { SafeAreaView, StyleSheet, Text, View, Image, Platform, Pressable, Alert, useWindowDimensions, Switch, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, Image, Platform, Pressable, Alert, useWindowDimensions, ScrollView, KeyboardAvoidingView } from 'react-native';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 // Video rendering uses expo-video, loaded dynamically in LazyVideo to avoid test env issues
 import LoadingOverlay from './components/LoadingOverlay';
 import VerticalLabel from './components/ui/VerticalLabel';
 import InputTextCard from './components/modality/input/InputTextCard';
+import ImageInputCard from './components/modality/input/ImageInputCard';
+import AudioInputCard from './components/modality/input/AudioInputCard';
+import FileInputCard from './components/modality/input/FileInputCard';
+import DrawingInputCard from './components/modality/input/DrawingInputCard';
+import ClipboardInputCard from './components/modality/input/ClipboardInputCard';
 import OutputChatPanel from './components/modality/output/OutputChatPanel';
 import OutputTTSPanel from './components/modality/output/OutputTTSPanel';
+import OutputImagePanel from './components/modality/output/OutputImagePanel';
+import OutputCodePanel from './components/modality/output/OutputCodePanel';
+import OutputTablePanel from './components/modality/output/OutputTablePanel';
+import OutputChartPanel from './components/modality/output/OutputChartPanel';
+import OutputFilePanel from './components/modality/output/OutputFilePanel';
 import StackPager from './components/ui/StackPager';
 import PaginationDots from './components/ui/PaginationDots';
 import ChatComposer from './components/composer/ChatComposer';
+import AgentCard from './components/modality/agent/AgentCard';
+import AgentSettingsPanel from './components/modality/agent/AgentSettingsPanel';
+import SettingsModal from './components/settings/SettingsModal';
 import { streamChat } from './services/agentClient';
+import { parseOutputs } from './services/parseOutput';
 import type { OutputType } from './components/types';
-import { API_BASE_URL, MULTIMODAL_API_KEY } from './services/config';
+import { API_BASE_URL } from './services/config';
+import { loadSettings, saveSettings, type AppSettings } from './services/settingsStorage';
 
 // Keep the splash screen visible while we bootstrap the app
 if (Platform.OS !== 'web') {
@@ -28,22 +43,52 @@ export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   const { width, height } = useWindowDimensions();
-  const isPortrait = height >= width;
 
   // Core interface state
   const [inputExpanded, setInputExpanded] = useState(false);
+  const [agentExpanded, setAgentExpanded] = useState(false);
   const [outputExpanded, setOutputExpanded] = useState(false);
   const [textInput, setTextInput] = useState('');
+  const [selectedInputIndex, setSelectedInputIndex] = useState(0);
+  const inputTypes = ['text', 'image', 'audio', 'file', 'drawing', 'clipboard'] as const;
+  type InputType = typeof inputTypes[number];
+  const [inputData, setInputData] = useState<Record<InputType, unknown>>({ 
+    text: '', 
+    image: null, 
+    audio: null, 
+    file: null, 
+    drawing: null, 
+    clipboard: null 
+  });
   const [chatMessages, setChatMessages] = useState<string[]>([]);
-  const [agentModel] = useState<string>('gpt-4o-mini');
   const [selectedOutputIndex, setSelectedOutputIndex] = useState(0);
-  const outputTypes: OutputType[] = ['chat', 'audio'];
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const outputTypes: OutputType[] = ['chat', 'audio', 'image', 'code', 'table', 'chart', 'file'];
   const [ttsStatus, setTtsStatus] = useState<'idle' | 'speaking' | 'error'>('idle');
+  // Demo data for new output cards
+  const [lastImage, setLastImage] = useState<string | null>(null);
+  const [codeSnippet, setCodeSnippet] = useState<string>(`function hello(name) {\n  return 'Hello, ' + name;\n}`);
+  const [tableRows, setTableRows] = useState<Array<Record<string, any>>>([
+    { item: 'Apples', qty: 4, price: 2.5 },
+    { item: 'Oranges', qty: 2, price: 3.0 },
+  ]);
+  const [chartData, setChartData] = useState<{ label: string; value: number }[]>([
+    { label: 'A', value: 10 },
+    { label: 'B', value: 6 },
+    { label: 'C', value: 14 },
+  ]);
+  const [files, setFiles] = useState<{ name: string; uri: string; size?: number }[]>([
+    { name: 'result.txt', uri: 'https://example.com/result.txt', size: 1234 },
+  ]);
 
   useEffect(() => {
     let mounted = true;
     const prepare = async () => {
       try {
+        // Load saved settings
+        const settings = await loadSettings();
+        if (mounted) setAppSettings(settings);
         // TODO: load fonts/assets here if needed
         await new Promise((res) => setTimeout(res, 600));
         // Best-effort: allow audio playback in iOS silent mode (may help TTS audibility)
@@ -89,8 +134,13 @@ export default function App() {
     return null;
   }
 
+  const handleSettingsChange = async (settings: AppSettings) => {
+    setAppSettings(settings);
+    await saveSettings(settings);
+  };
+
   const handleSend = async () => {
-    if (!textInput.trim()) return;
+    if (!textInput.trim() || !appSettings) return;
     
     // Expand output section when sending first message
     if (!outputExpanded) {
@@ -104,11 +154,33 @@ export default function App() {
       console.log('[chat] start streaming');
       let acc = '';
       setChatMessages((arr) => ['…', ...arr]);
-      await streamChat({ model: agentModel, messages: [{ role: 'user', content: inputText }] }, (chunk) => {
+      const messages = appSettings.agent.systemPrompt 
+        ? [{ role: 'system' as const, content: appSettings.agent.systemPrompt }, { role: 'user' as const, content: inputText }]
+        : [{ role: 'user' as const, content: inputText }];
+      await streamChat({
+        provider: appSettings.agent.provider,
+        model: appSettings.agent.model,
+        messages,
+        temperature: appSettings.agent.temperature,
+        maxTokens: appSettings.agent.maxTokens,
+      }, (chunk) => {
         acc += chunk;
         setChatMessages((arr) => [acc, ...arr.slice(1)]);
       });
       console.log('[chat] streaming done. chars:', acc.length);
+      // Parse structured outputs from the final text
+      try {
+        const parsed = parseOutputs(acc);
+        if (parsed.codeBlocks[0]) setCodeSnippet(parsed.codeBlocks[0].code);
+        if (parsed.imageUris[0]) setLastImage(parsed.imageUris[0]);
+        if (parsed.tables[0]) {
+          const t = parsed.tables[0];
+          const rows = t.rows.map((r) => Object.fromEntries(t.headers.map((h, i) => [h, r[i] ?? ''])));
+          setTableRows(rows);
+        }
+        if (parsed.charts[0]) setChartData(parsed.charts[0]);
+        if (parsed.files?.length) setFiles(parsed.files);
+      } catch {}
       setTextInput('');
     } else if (selectedOutput === 'audio') {
       try {
@@ -123,12 +195,34 @@ export default function App() {
         console.log('[tts] fetching agent reply for TTS…');
         let acc = '';
         setChatMessages((arr) => ['…', ...arr]);
-        await streamChat({ model: agentModel, messages: [{ role: 'user', content: inputText }] }, (chunk) => {
+        const messages = appSettings.agent.systemPrompt 
+          ? [{ role: 'system' as const, content: appSettings.agent.systemPrompt }, { role: 'user' as const, content: inputText }]
+          : [{ role: 'user' as const, content: inputText }];
+        await streamChat({
+          provider: appSettings.agent.provider,
+          model: appSettings.agent.model,
+          messages,
+          temperature: appSettings.agent.temperature,
+          maxTokens: appSettings.agent.maxTokens,
+        }, (chunk) => {
           acc += chunk;
           setChatMessages((arr) => [acc, ...arr.slice(1)]);
         });
         console.log('[tts] agent reply length:', acc.length);
-        // 2) Speak the agent reply, not the raw user input
+        // 2) Parse structured outputs
+        try {
+          const parsed = parseOutputs(acc);
+          if (parsed.codeBlocks[0]) setCodeSnippet(parsed.codeBlocks[0].code);
+          if (parsed.imageUris[0]) setLastImage(parsed.imageUris[0]);
+          if (parsed.tables[0]) {
+            const t = parsed.tables[0];
+            const rows = t.rows.map((r) => Object.fromEntries(t.headers.map((h, i) => [h, r[i] ?? ''])));
+            setTableRows(rows);
+          }
+          if (parsed.charts[0]) setChartData(parsed.charts[0]);
+          if (parsed.files?.length) setFiles(parsed.files);
+        } catch {}
+        // 3) Speak the agent reply, not the raw user input
         setTtsStatus('speaking');
         const opts = {
           language: 'en-US',
@@ -194,7 +288,9 @@ export default function App() {
           resizeMode="contain"
           accessibilityLabel="App logo"
         />
-        <View style={styles.headerBack} />
+        <Pressable style={styles.headerBack} onPress={() => setSettingsModalVisible(true)}>
+          <Text style={{ fontSize: 16 }}>⚙️</Text>
+        </Pressable>
       </View>
       {/* Main interface */}
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -215,12 +311,67 @@ export default function App() {
               </Pressable>
             ) : (
               <>
-                <InputTextCard value={textInput} onChange={setTextInput} />
+                <StackPager
+                  items={[...inputTypes]}
+                  selectedIndex={selectedInputIndex}
+                  onIndexChange={setSelectedInputIndex}
+                  renderItem={(type, idx, selected) => (
+                    type === 'text' ? (
+                      <InputTextCard 
+                        value={textInput} 
+                        onChange={setTextInput} 
+                      />
+                    ) : type === 'image' ? (
+                      <ImageInputCard 
+                        onImageSelect={(uri) => setInputData(prev => ({ ...prev, image: uri }))} 
+                      />
+                    ) : type === 'audio' ? (
+                      <AudioInputCard 
+                        onAudioSelect={(uri) => setInputData(prev => ({ ...prev, audio: uri }))} 
+                      />
+                    ) : type === 'file' ? (
+                      <FileInputCard 
+                        onFileSelect={(uri, name) => setInputData(prev => ({ ...prev, file: { uri, name } }))} 
+                      />
+                    ) : type === 'drawing' ? (
+                      <DrawingInputCard 
+                        onDrawingComplete={(svg) => setInputData(prev => ({ ...prev, drawing: svg }))} 
+                      />
+                    ) : type === 'clipboard' ? (
+                      <ClipboardInputCard 
+                        onClipboardPaste={(content, type) => setInputData(prev => ({ ...prev, clipboard: { content, type } }))} 
+                      />
+                    ) : null
+                  )}
+                />
+                <PaginationDots
+                  count={inputTypes.length}
+                  index={selectedInputIndex}
+                  onDotPress={setSelectedInputIndex}
+                />
                 <View style={{ marginTop: 8 }}>
-                  <ChatComposer value={textInput} onChange={setTextInput} onSend={handleSend} disabled={false} />
+                  <ChatComposer 
+                    value={textInput} 
+                    onChange={setTextInput} 
+                    onSend={handleSend} 
+                    disabled={false} 
+                  />
                 </View>
               </>
             )}
+          </View>
+          {/* Agent Section */}
+          <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
+            <AgentCard expanded={agentExpanded} onToggle={() => setAgentExpanded(!agentExpanded)}>
+              {appSettings && (
+                <AgentSettingsPanel
+                  settings={appSettings.agent}
+                  onSettingsChange={(agentSettings) => 
+                    handleSettingsChange({ ...appSettings, agent: agentSettings })
+                  }
+                />
+              )}
+            </AgentCard>
           </View>
           {/* Output Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
@@ -239,9 +390,19 @@ export default function App() {
                   renderItem={(type, idx, selected) => (
                     type === 'chat' ? (
                       <OutputChatPanel messages={chatMessages} />
-                    ) : (
+                    ) : type === 'audio' ? (
                       <OutputTTSPanel status={ttsStatus} />
-                    )
+                    ) : type === 'image' ? (
+                      <OutputImagePanel uri={lastImage ?? null} />
+                    ) : type === 'code' ? (
+                      <OutputCodePanel code={codeSnippet} language={'js'} />
+                    ) : type === 'table' ? (
+                      <OutputTablePanel rows={tableRows} title="Items" />
+                    ) : type === 'chart' ? (
+                      <OutputChartPanel data={chartData} title="Distribution" />
+                    ) : type === 'file' ? (
+                      <OutputFilePanel files={files} />
+                    ) : null
                   )}
                 />
                 <PaginationDots
@@ -257,6 +418,14 @@ export default function App() {
         </KeyboardAvoidingView>
       <StatusBar style="dark" />
       <LoadingOverlay visible={showLoader} title="MultiModal" subtitle="Loading…" logo={require('./assets/splash.png')} />
+      {appSettings && (
+        <SettingsModal
+          visible={settingsModalVisible}
+          settings={appSettings}
+          onClose={() => setSettingsModalVisible(false)}
+          onSettingsChange={handleSettingsChange}
+        />
+      )}
     </SafeAreaView>
   );
 }

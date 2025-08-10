@@ -4,6 +4,9 @@
 
 The Vercel AI SDK now officially supports Expo applications (Expo SDK 52+), enabling AI-powered mobile apps with streaming responses, multimodal support, and server-side API key management. This guide covers the complete integration for our multimodal Expo app.
 
+Related docs
+- Modalities & capabilities matrix: `.vibe/docs/ai-sdk-modalities.md`
+
 ## Prerequisites
 
 - Expo SDK 52+ (we have SDK 53 ✓)

@@ -20,11 +20,15 @@
   "dependencies": {
     "@ai-sdk/react": "^2.0.8",
     "@expo/metro-runtime": "~5.0.4",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/slider": "^4.5.7",
     "ai": "^5.0.8",
     "expo": "~53.0.20",
     "expo-audio": "~0.4.8",
     "expo-av": "~15.1.7",
     "expo-camera": "~16.1.11",
+    "expo-clipboard": "^7.1.5",
+    "expo-document-picker": "^13.1.6",
     "expo-file-system": "~18.1.11",
     "expo-image-picker": "~16.1.4",
     "expo-media-library": "~17.1.7",
@@ -35,6 +39,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
+    "react-native-svg": "^15.12.1",
     "react-native-web": "^0.20.0"
   },
   "devDependencies": {
