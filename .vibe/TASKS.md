@@ -1,6 +1,14 @@
-BUGS:
+## COMPLETED BUGS (2025-08-10):
 
-The chat input card needs to lock out the 'send' button when something is being sent. Likewise we should line up the general ux experience of all the cards. I like the size of the drawing card we are taking we should follow the same pattern with the others. Likwise, when we are swiping amongst the different input types, they should default to their 'icon-only' landing state, when selected, then the interface can be shown. This should follow for all of the input types. 
-For the drawing one, we should default to a full-screen modal, so the user can draw on the whole of their screen, with a button to "de-expand", and then the interface should allow them to send. 
-Ask for help if you need it, break down the tasks if its helpful. 
+✅ The chat input card now locks the 'send' button when something is being sent
+✅ All input cards now default to their 'icon-only' collapsed state
+✅ Each input card has its own send button with proper disabled state during sending
+✅ Input cards expand when tapped to show their full interface
+✅ Added consistent header with close button to all expanded input cards
+
+## REMAINING TASKS:
+
+📝 Standardize all card sizes to match the drawing card pattern (minHeight: 300)
+📝 Implement full-screen modal for drawing card with "de-expand" button
+📝 Add consistent padding and spacing across all cards 
 
