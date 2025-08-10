@@ -238,11 +238,13 @@ export default function App() {
   };
 
   const handleSend = async () => {
-    if (!textInput.trim() || !appSettings || isSending) return;
+    // Check for either text input or clipboard content
+    const clipboardContent = inputData.clipboard as { content: string; type: string } | null;
+    const inputText = textInput.trim() || clipboardContent?.content || '';
+    
+    if (!inputText || !appSettings || isSending) return;
     
     setIsSending(true);
-    
-    const inputText = textInput.trim();
     const selectedOutput = outputTypes[selectedOutputIndex];
     const agentMode = appSettings.agentMode?.selectedMode || 'text';
     
@@ -253,6 +255,7 @@ export default function App() {
       // DALL-E image generation
       await handleImageGeneration(inputText);
       setTextInput('');
+      setInputData(prev => ({ ...prev, clipboard: null }));
       setIsSending(false);
       return;
     }
@@ -290,6 +293,7 @@ export default function App() {
         if (parsed.files?.length) setFiles(parsed.files);
       } catch {}
       setTextInput('');
+      setInputData(prev => ({ ...prev, clipboard: null }));
       setIsSending(false);
     } else if (selectedOutput === 'audio') {
       try {
@@ -305,6 +309,7 @@ export default function App() {
           // Use OpenAI TTS directly - let the OutputTTSPanel handle it
           console.log('[tts] Using OpenAI TTS for speak mode');
           setTextInput('');
+          setInputData(prev => ({ ...prev, clipboard: null }));
           setIsSending(false);
           setSelectedOutputIndex(1); // Switch to audio output
           return;
@@ -368,6 +373,7 @@ export default function App() {
         Alert.alert('TTS Error', 'Unable to speak the text.');
       } finally {
         setTextInput('');
+        setInputData(prev => ({ ...prev, clipboard: null }));
         setIsSending(false);
       }
     }
