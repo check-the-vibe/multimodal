@@ -89,3 +89,5 @@ Docs
 - Migration: `.vibe/docs/expo-av-to-expo-video.md`
 - Core interface: `.vibe/docs/core-interface.md`
 - Team Lead notes: `.vibe/docs/team-lead-session.md`
+- GPT‑5 prompting: `.vibe/docs/prompting-gpt5.md`
+- Types and routing: `.vibe/docs/types-and-routing.md`

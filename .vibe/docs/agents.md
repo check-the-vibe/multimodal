@@ -2,6 +2,7 @@ Title: Agent Capabilities and Filtering
 
 Related
 - Team Lead session notes: `./team-lead-session.md`
+- GPT‑5 prompting guide: `./prompting-gpt5.md`
 
 Overview
 - Agents sit between Inputs and Outputs. They accept certain input capabilities and can produce certain outputs.
@@ -54,3 +55,13 @@ UI Notes
 - Agent section mirrors Inputs/Outputs: pager + dots + section header.
 - AgentCard should show accepts/produces badges and a "Coming soon" pill when disabled.
 - Selecting an agent that yields no outputs should be prevented by filtering; ensure at least one output remains selectable.
+
+Prompting Patterns (Adapted)
+- System intent: Clearly state agent role (e.g., “Vision reasoning over images + text; produce chat”).
+- Inputs: List selected input capability and constraints (e.g., `image`, size/format, no external fetch).
+- Outputs: Specify required output type(s) and format (e.g., chat as concise markdown‑like text; or JSON for settings).
+- Safety: “Do not fabricate content beyond visible inputs; if uncertain, say so briefly.”
+- Example (Vision‑LLM):
+  - System: “You are Vision‑LLM. Accept text+image; respond as chat. Be concise.”
+  - User: “Describe key objects and their relations in the provided image.”
+  - Output: “Short paragraph; avoid speculation; reference visible attributes only.”

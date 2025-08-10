@@ -1,4 +1,4 @@
-# Repository Guidelines
+# Repository + Agent Operations
 
 ## Project Structure & Module Organization
 - `App.js`: Root React Native component with swipeable modality lists.
@@ -102,3 +102,48 @@
 - Handoffs: after FEATURES lands, unblock QA and DOCS; LEAD validates on web.
 
 For deeper operational notes and prompt templates, see `.vibe/AGENT_WORKING_KNOWLEDGE.md`.
+
+---
+
+# GPT‑5 Prompting Guide (Adapted for This Repo)
+
+Overview
+- Goal: Standardize high‑signal prompts for GPT‑5 and sibling models used by our LEAD/INTEGRATOR/FEATURES/QA/DOCS roles.
+- Reference: See `.vibe/docs/prompting-gpt5.md` for the full guide; this section provides quick templates and expectations.
+
+Core Rules
+- Be explicit about objectives, constraints, and expected outputs.
+- Ground instructions in concrete files and acceptance criteria.
+- Make the smallest viable change; avoid refactors unless required.
+- Use `apply_patch` for edits and `update_plan` for progress; include a brief preamble before tool calls.
+
+Role Prompt Templates
+- LEAD
+  - Intent: Plan steps, owners, and checks; keep one in‑progress step.
+  - Output: 3–6 step plan, risks, and the next action.
+- INTEGRATOR
+  - Intent: Scripts/config updates with verification.
+  - Output: Focused diffs + run commands, no network unless approved.
+- FEATURES
+  - Intent: Implement scoped UI/logic with tests.
+  - Output: Minimal patch, brief decisions, and smoke test notes.
+- QA
+  - Intent: Add smoke/behavior tests.
+  - Output: Test files + `npm test` expectations.
+- DOCS
+  - Intent: Refresh README/notes.
+  - Output: Concise sections + cross‑links.
+
+Output Modes
+- Prose: Concise bullets grouped by topic.
+- JSON: Provide only the requested keys (no extras); declare schema when needed.
+- Patch: Only necessary hunks; don’t reformat unrelated code.
+
+Safety & Sandbox
+- No secrets; avoid destructive shell actions; escalate for network installs.
+- Acknowledge limitations (network‑restricted); don’t fabricate external facts.
+
+Cross‑Links
+- Full prompting guide: `.vibe/docs/prompting-gpt5.md`
+- Team Lead notes: `.vibe/docs/team-lead-session.md`
+- Agent schema and filtering: `.vibe/docs/agents.md`

@@ -2,13 +2,19 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaView, StyleSheet, Text, View, Image, Platform, Pressable, Alert, useWindowDimensions, Switch, ScrollView, KeyboardAvoidingView } from 'react-native';
+import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 // Video rendering uses expo-video, loaded dynamically in LazyVideo to avoid test env issues
 import LoadingOverlay from './components/LoadingOverlay';
 import VerticalLabel from './components/ui/VerticalLabel';
 import InputTextCard from './components/modality/input/InputTextCard';
 import OutputChatPanel from './components/modality/output/OutputChatPanel';
+import OutputTTSPanel from './components/modality/output/OutputTTSPanel';
+import StackPager from './components/ui/StackPager';
+import PaginationDots from './components/ui/PaginationDots';
 import ChatComposer from './components/composer/ChatComposer';
 import { streamChat } from './services/agentClient';
+import type { OutputType } from './components/types';
 import { API_BASE_URL, MULTIMODAL_API_KEY } from './services/config';
 
 // Keep the splash screen visible while we bootstrap the app
@@ -30,6 +36,9 @@ export default function App() {
   const [textInput, setTextInput] = useState('');
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [agentModel] = useState<string>('gpt-4o-mini');
+  const [selectedOutputIndex, setSelectedOutputIndex] = useState(0);
+  const outputTypes: OutputType[] = ['chat', 'audio'];
+  const [ttsStatus, setTtsStatus] = useState<'idle' | 'speaking' | 'error'>('idle');
 
   useEffect(() => {
     let mounted = true;
@@ -37,6 +46,18 @@ export default function App() {
       try {
         // TODO: load fonts/assets here if needed
         await new Promise((res) => setTimeout(res, 600));
+        // Best-effort: allow audio playback in iOS silent mode (may help TTS audibility)
+        try {
+          console.log('[audio] Setting audio mode…');
+          const mode = await Audio.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            allowsRecordingIOS: false,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+          });
+          console.log('[audio] Audio mode set OK', mode);
+        } catch {}
       } finally {
         if (mounted) setAppIsReady(true);
       }
@@ -77,13 +98,64 @@ export default function App() {
     }
     
     const inputText = textInput.trim();
-    let acc = '';
-    setChatMessages((arr) => ['…', ...arr]);
-    await streamChat({ model: agentModel, messages: [{ role: 'user', content: inputText }] }, (chunk) => {
-      acc += chunk;
-      setChatMessages((arr) => [acc, ...arr.slice(1)]);
-    });
-    setTextInput('');
+    const selectedOutput = outputTypes[selectedOutputIndex];
+    console.log('[send] Platform:', Platform.OS, 'Selected output:', selectedOutput, 'Text length:', inputText.length);
+    if (selectedOutput === 'chat') {
+      console.log('[chat] start streaming');
+      let acc = '';
+      setChatMessages((arr) => ['…', ...arr]);
+      await streamChat({ model: agentModel, messages: [{ role: 'user', content: inputText }] }, (chunk) => {
+        acc += chunk;
+        setChatMessages((arr) => [acc, ...arr.slice(1)]);
+      });
+      console.log('[chat] streaming done. chars:', acc.length);
+      setTextInput('');
+    } else if (selectedOutput === 'audio') {
+      try {
+        // Stop any ongoing utterance before starting a new one
+        try { 
+          const speaking = await Speech.isSpeakingAsync();
+          console.log('[tts] isSpeaking before stop:', speaking);
+          await Speech.stop();
+          console.log('[tts] stop called');
+        } catch (e) { console.log('[tts] stop error', e); }
+        // 1) Get agent response via streaming, mirror to chat
+        console.log('[tts] fetching agent reply for TTS…');
+        let acc = '';
+        setChatMessages((arr) => ['…', ...arr]);
+        await streamChat({ model: agentModel, messages: [{ role: 'user', content: inputText }] }, (chunk) => {
+          acc += chunk;
+          setChatMessages((arr) => [acc, ...arr.slice(1)]);
+        });
+        console.log('[tts] agent reply length:', acc.length);
+        // 2) Speak the agent reply, not the raw user input
+        setTtsStatus('speaking');
+        const opts = {
+          language: 'en-US',
+          pitch: 1.0,
+          rate: Platform.OS === 'ios' ? 0.5 : 1.0,
+          onStart: () => { console.log('[tts] onStart'); setTtsStatus('speaking'); },
+          onDone: () => { console.log('[tts] onDone'); setTtsStatus('idle'); },
+          onStopped: () => { console.log('[tts] onStopped'); setTtsStatus('idle'); },
+          onError: (e?: any) => { console.log('[tts] onError', e); setTtsStatus('error'); },
+        } as const;
+        console.log('[tts] speak agent reply start', { len: acc.length, opts });
+        Speech.speak(acc || inputText, opts);
+        // Probe speaking state shortly after invocation
+        setTimeout(async () => {
+          try {
+            const s = await Speech.isSpeakingAsync();
+            console.log('[tts] isSpeaking after start (~200ms):', s);
+          } catch {}
+        }, 200);
+      } catch (e) {
+        console.log('[tts] exception during speak', e);
+        setTtsStatus('error');
+        Alert.alert('TTS Error', 'Unable to speak the text.');
+      } finally {
+        setTextInput('');
+      }
+    }
   };
 
   // Network test function for debugging
@@ -156,10 +228,28 @@ export default function App() {
             {!outputExpanded ? (
               <View style={styles.iconContainer}>
                 <Text style={styles.chatIcon}>🗨️</Text>
-                <Text style={styles.hintSmall}>Chat responses will appear here</Text>
+                <Text style={styles.hintSmall}>Swipe outputs after sending</Text>
               </View>
             ) : (
-              <OutputChatPanel messages={chatMessages} />
+              <>
+                <StackPager
+                  items={outputTypes}
+                  selectedIndex={selectedOutputIndex}
+                  onIndexChange={setSelectedOutputIndex}
+                  renderItem={(type, idx, selected) => (
+                    type === 'chat' ? (
+                      <OutputChatPanel messages={chatMessages} />
+                    ) : (
+                      <OutputTTSPanel status={ttsStatus} />
+                    )
+                  )}
+                />
+                <PaginationDots
+                  count={outputTypes.length}
+                  index={selectedOutputIndex}
+                  onDotPress={setSelectedOutputIndex}
+                />
+              </>
             )}
           </View>
             </View>
@@ -317,4 +407,3 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
-
