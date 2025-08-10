@@ -204,35 +204,67 @@ export default function App() {
   const handleImageGeneration = async (prompt: string) => {
     if (!appSettings) return;
 
+    console.log('[CreateAgent] Starting image generation...');
+    console.log('[CreateAgent] Prompt:', prompt);
+    console.log('[CreateAgent] Prompt length:', prompt.length, 'characters');
+    
+    const agentSettings = appSettings.agentMode?.settings || {};
+    const imageSize = agentSettings.imageSize || '1024x1024';
+    const imageQuality = agentSettings.imageQuality || 'standard';
+    
+    console.log('[CreateAgent] Settings - Size:', imageSize, 'Quality:', imageQuality);
+
     setIsSending(true);
     try {
+      const requestBody = {
+        prompt,
+        model: 'dall-e-3',
+        n: 1,
+        size: imageSize,
+        quality: imageQuality,
+      };
+      
+      console.log('[CreateAgent] Sending request to:', `${API_BASE_URL}/api/openai/generate`);
+      console.log('[CreateAgent] Request body:', JSON.stringify(requestBody));
+      
       const response = await fetch(`${API_BASE_URL}/api/openai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': process.env.EXPO_PUBLIC_MULTIMODAL_API_KEY || 'mm_469eade2349b909e92b789cf1533dc3592f08480d9f6a0794ba09b94ac29669d',
         },
-        body: JSON.stringify({
-          prompt,
-          model: 'dall-e-3',
-          n: 1,
-          size: '1024x1024',
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('[CreateAgent] Response status:', response.status);
+      console.log('[CreateAgent] Response ok:', response.ok);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[CreateAgent] Error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('[CreateAgent] Response received');
+      console.log('[CreateAgent] Response keys:', Object.keys(data));
+      console.log('[CreateAgent] Images count:', data.images?.length || 0);
+      
       if (data.images && data.images.length > 0) {
+        console.log('[CreateAgent] First image URL preview:', data.images[0].url?.substring(0, 100) + '...');
+        console.log('[CreateAgent] Revised prompt:', data.images[0].revised_prompt?.substring(0, 100));
         setGeneratedImages((prev) => [...data.images, ...prev]);
         setSelectedOutputIndex(2); // Switch to image output
+        console.log('[CreateAgent] Image added to gallery, switched to image output');
+      } else {
+        console.warn('[CreateAgent] No images in response');
       }
     } catch (error) {
-      console.error('Image generation error:', error);
+      console.error('[CreateAgent] Image generation error:', error);
+      console.error('[CreateAgent] Error stack:', error instanceof Error ? error.stack : 'No stack');
       setChatMessages((prev) => [`Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`, ...prev]);
     } finally {
+      console.log('[CreateAgent] Generation complete');
       setIsSending(false);
     }
   };

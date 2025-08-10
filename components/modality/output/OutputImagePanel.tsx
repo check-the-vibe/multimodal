@@ -20,63 +20,89 @@ export default function OutputImagePanel({ uri, uris, alt = 'Last image', genera
     
     // Add generated images first (from DALL-E)
     if (generatedImages?.length) {
+      console.log('[OutputImagePanel] Adding', generatedImages.length, 'generated images');
       arr.push(...generatedImages.filter(Boolean));
     }
     
     // Add other images
     if (uris?.length) {
+      console.log('[OutputImagePanel] Adding', uris.filter(Boolean).length, 'other images');
       arr.push(...(uris.filter(Boolean) as string[]));
     }
     if (uri) {
+      console.log('[OutputImagePanel] Adding single URI to front');
       arr.unshift(uri);
     }
     
-    return Array.from(new Set(arr));
+    const uniqueList = Array.from(new Set(arr));
+    console.log('[OutputImagePanel] Total unique images:', uniqueList.length);
+    return uniqueList;
   }, [uri, uris, generatedImages]);
 
   const downloadImage = async (imageUrl: string, index: number) => {
+    console.log('[OutputImagePanel] Download requested for image', index + 1);
+    console.log('[OutputImagePanel] Image URL:', imageUrl.substring(0, 100) + '...');
+    
     if (Platform.OS === 'web') {
+      console.log('[OutputImagePanel] Web platform detected, opening in new tab');
       // For web, open in new tab
       Linking.openURL(imageUrl);
       return;
     }
 
+    console.log('[OutputImagePanel] Mobile platform, starting download...');
     setDownloadingIndex(index);
     try {
       // Request permissions
+      console.log('[OutputImagePanel] Requesting media library permissions...');
       const { status } = await MediaLibrary.requestPermissionsAsync();
+      console.log('[OutputImagePanel] Permission status:', status);
+      
       if (status !== 'granted') {
+        console.log('[OutputImagePanel] Permission denied');
         Alert.alert('Permission needed', 'Permission to access media library is required to download images');
         return;
       }
 
       // Download the image
       const filename = `generated_image_${Date.now()}.png`;
+      console.log('[OutputImagePanel] Downloading to:', filename);
+      
       const downloadResult = await FileSystem.downloadAsync(
         imageUrl,
         FileSystem.documentDirectory + filename
       );
 
+      console.log('[OutputImagePanel] Download status:', downloadResult.status);
+      console.log('[OutputImagePanel] Downloaded to:', downloadResult.uri);
+
       if (downloadResult.status === 200) {
         // Save to media library
+        console.log('[OutputImagePanel] Saving to media library...');
         const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
         await MediaLibrary.createAlbumAsync('Downloaded Images', asset, false);
         
+        console.log('[OutputImagePanel] Image saved successfully');
         Alert.alert('Success', 'Image saved to your photo gallery');
       } else {
-        throw new Error('Download failed');
+        throw new Error(`Download failed with status ${downloadResult.status}`);
       }
     } catch (error) {
-      console.error('Download error:', error);
+      console.error('[OutputImagePanel] Download error:', error);
+      console.error('[OutputImagePanel] Error stack:', error instanceof Error ? error.stack : 'No stack');
       Alert.alert('Download Error', error instanceof Error ? error.message : 'Failed to download image');
     } finally {
+      console.log('[OutputImagePanel] Resetting download state');
       setDownloadingIndex(null);
     }
   };
 
   return (
     <ModalityCard tone="output" label="Image">
-      <Pressable accessibilityRole="button" onPress={() => setExpanded((v) => !v)}>
+      <Pressable accessibilityRole="button" onPress={() => {
+        console.log('[OutputImagePanel] Toggle expanded:', !expanded);
+        setExpanded((v) => !v);
+      }}>
         <Text style={styles.headerText}>{expanded ? '▾' : '▸'} Generated Images</Text>
       </Pressable>
       {expanded ? (

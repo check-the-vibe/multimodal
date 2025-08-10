@@ -1,9 +1,4 @@
 <bugs>
-Output Card: On push of data to code and table expand in size as an agent is 'thinking'.
-
-TEXT-06: Send button does not work on clipboard input
-VISION-01: 404 when pressing "analyze" button in image input card. 
-
 
 </bugs>
 

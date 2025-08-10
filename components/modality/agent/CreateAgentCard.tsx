@@ -14,7 +14,10 @@ export default function CreateAgentCard({ settings, onSettingsChange }: CreateAg
   if (!isExpanded) {
     return (
       <ModalityCard tone="agent" label="Create">
-        <Pressable style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+        <Pressable style={styles.collapsedContainer} onPress={() => {
+          console.log('[CreateAgentCard] Expanding card');
+          setIsExpanded(true);
+        }}>
           <Text style={styles.icon}>🎨</Text>
           <Text style={styles.collapsedText}>DALL-E 3</Text>
         </Pressable>
@@ -42,7 +45,10 @@ export default function CreateAgentCard({ settings, onSettingsChange }: CreateAg
             <View style={styles.sizeOptions}>
               <Pressable 
                 style={[styles.sizeOption, settings.imageSize === '1024x1024' && styles.sizeOptionActive]}
-                onPress={() => onSettingsChange({ ...settings, imageSize: '1024x1024' })}
+                onPress={() => {
+                  console.log('[CreateAgentCard] Image size changed to: Square (1024x1024)');
+                  onSettingsChange({ ...settings, imageSize: '1024x1024' });
+                }}
               >
                 <Text style={[styles.sizeOptionText, settings.imageSize === '1024x1024' && styles.sizeOptionTextActive]}>
                   Square
@@ -53,7 +59,10 @@ export default function CreateAgentCard({ settings, onSettingsChange }: CreateAg
               </Pressable>
               <Pressable 
                 style={[styles.sizeOption, settings.imageSize === '1792x1024' && styles.sizeOptionActive]}
-                onPress={() => onSettingsChange({ ...settings, imageSize: '1792x1024' })}
+                onPress={() => {
+                  console.log('[CreateAgentCard] Image size changed to: Wide (1792x1024)');
+                  onSettingsChange({ ...settings, imageSize: '1792x1024' });
+                }}
               >
                 <Text style={[styles.sizeOptionText, settings.imageSize === '1792x1024' && styles.sizeOptionTextActive]}>
                   Wide
@@ -64,7 +73,10 @@ export default function CreateAgentCard({ settings, onSettingsChange }: CreateAg
               </Pressable>
               <Pressable 
                 style={[styles.sizeOption, settings.imageSize === '1024x1792' && styles.sizeOptionActive]}
-                onPress={() => onSettingsChange({ ...settings, imageSize: '1024x1792' })}
+                onPress={() => {
+                  console.log('[CreateAgentCard] Image size changed to: Tall (1024x1792)');
+                  onSettingsChange({ ...settings, imageSize: '1024x1792' });
+                }}
               >
                 <Text style={[styles.sizeOptionText, settings.imageSize === '1024x1792' && styles.sizeOptionTextActive]}>
                   Tall
@@ -81,7 +93,10 @@ export default function CreateAgentCard({ settings, onSettingsChange }: CreateAg
             <View style={styles.qualityOptions}>
               <Pressable 
                 style={[styles.qualityOption, settings.imageQuality === 'standard' && styles.qualityOptionActive]}
-                onPress={() => onSettingsChange({ ...settings, imageQuality: 'standard' })}
+                onPress={() => {
+                  console.log('[CreateAgentCard] Quality changed to: Standard');
+                  onSettingsChange({ ...settings, imageQuality: 'standard' });
+                }}
               >
                 <Text style={[styles.qualityOptionText, settings.imageQuality === 'standard' && styles.qualityOptionTextActive]}>
                   Standard
@@ -89,7 +104,10 @@ export default function CreateAgentCard({ settings, onSettingsChange }: CreateAg
               </Pressable>
               <Pressable 
                 style={[styles.qualityOption, settings.imageQuality === 'hd' && styles.qualityOptionActive]}
-                onPress={() => onSettingsChange({ ...settings, imageQuality: 'hd' })}
+                onPress={() => {
+                  console.log('[CreateAgentCard] Quality changed to: HD');
+                  onSettingsChange({ ...settings, imageQuality: 'hd' });
+                }}
               >
                 <Text style={[styles.qualityOptionText, settings.imageQuality === 'hd' && styles.qualityOptionTextActive]}>
                   HD

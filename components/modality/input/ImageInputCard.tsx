@@ -24,26 +24,37 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
   const analyzeWithVision = async () => {
     if (!imageUri || !onVisionAnalysis) return;
     
+    console.log('[ImageInputCard] Starting vision analysis...');
+    console.log('[ImageInputCard] Image URI:', imageUri.substring(0, 100) + (imageUri.length > 100 ? '...' : ''));
+    
     setIsAnalyzing(true);
     try {
       // Prepare the image content based on whether it's a URL or local file
       let imageContent;
+      let imageType = 'unknown';
+      
       if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
         // URL image
+        imageType = 'url';
         imageContent = {
           type: 'image',
           image: {
             url: imageUri
           }
         };
+        console.log('[ImageInputCard] Image type: URL');
       } else if (imageUri.startsWith('data:image')) {
         // Base64 image
+        imageType = 'base64';
         imageContent = {
           type: 'image',
           image: imageUri
         };
+        console.log('[ImageInputCard] Image type: Base64, size:', Math.round(imageUri.length / 1024), 'KB');
       } else {
         // Local file - convert to base64
+        imageType = 'local';
+        console.log('[ImageInputCard] Image type: Local file, converting to base64...');
         try {
           const base64 = await FileSystem.readAsStringAsync(imageUri, {
             encoding: FileSystem.EncodingType.Base64,
@@ -54,8 +65,9 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
             type: 'image',
             image: `data:image/${mimeType};base64,${base64}`
           };
+          console.log('[ImageInputCard] Converted to base64, size:', Math.round(base64.length / 1024), 'KB');
         } catch (err) {
-          console.error('Failed to convert local image to base64:', err);
+          console.error('[ImageInputCard] Failed to convert local image to base64:', err);
           // Fallback to URL format
           imageContent = {
             type: 'image',
@@ -63,40 +75,60 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
               url: imageUri
             }
           };
+          console.log('[ImageInputCard] Falling back to URL format');
         }
       }
 
+      const requestBody = {
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Analyze this image and describe what you see in detail.' },
+            imageContent
+          ]
+        }],
+        mode: 'analyze',
+        stream: false
+      };
+      
+      console.log('[ImageInputCard] Sending vision API request...');
+      console.log('[ImageInputCard] Request URL:', `${API_BASE_URL}/api/openai/vision`);
+      console.log('[ImageInputCard] Request mode:', requestBody.mode);
+      console.log('[ImageInputCard] Message count:', requestBody.messages.length);
+      
       const response = await fetch(`${API_BASE_URL}/api/openai/vision`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': MULTIMODAL_API_KEY,
         },
-        body: JSON.stringify({
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Analyze this image and describe what you see in detail.' },
-              imageContent
-            ]
-          }],
-          mode: 'analyze',
-          stream: false
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      console.log('[ImageInputCard] Response status:', response.status);
+      console.log('[ImageInputCard] Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Vision API error:', response.status, errorData);
+        console.error('[ImageInputCard] Vision API error:', response.status);
+        console.error('[ImageInputCard] Error details:', errorData);
         throw new Error(`Vision API error: ${response.status} - ${errorData}`);
       }
 
       const data = await response.json();
-      onVisionAnalysis(data.message || data.analysis || 'Analysis complete');
+      console.log('[ImageInputCard] Response received successfully');
+      console.log('[ImageInputCard] Response data keys:', Object.keys(data));
+      console.log('[ImageInputCard] Analysis length:', data.message?.length || data.analysis?.length || 0);
+      
+      const analysisResult = data.message || data.analysis || 'Analysis complete';
+      console.log('[ImageInputCard] Passing analysis to callback, first 100 chars:', analysisResult.substring(0, 100));
+      onVisionAnalysis(analysisResult);
     } catch (error) {
-      console.error('Vision analysis error:', error);
+      console.error('[ImageInputCard] Vision analysis error:', error);
+      console.error('[ImageInputCard] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       Alert.alert('Analysis Error', error instanceof Error ? error.message : 'Failed to analyze image');
     } finally {
+      console.log('[ImageInputCard] Analysis complete, resetting state');
       setIsAnalyzing(false);
     }
   };
@@ -124,8 +156,12 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
   };
 
   const takePhoto = async () => {
+    console.log('[ImageInputCard] Taking photo...');
     const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      console.log('[ImageInputCard] Camera permission denied');
+      return;
+    }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -136,14 +172,22 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
 
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri;
+      console.log('[ImageInputCard] Photo captured:', uri);
+      console.log('[ImageInputCard] Photo dimensions:', result.assets[0].width, 'x', result.assets[0].height);
       setImageUri(uri);
       onImageSelect?.(uri);
+    } else {
+      console.log('[ImageInputCard] Photo capture canceled');
     }
   };
 
   const pickImage = async () => {
+    console.log('[ImageInputCard] Picking image from gallery...');
     const hasPermission = await requestGalleryPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      console.log('[ImageInputCard] Gallery permission denied');
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -154,17 +198,25 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
 
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri;
+      console.log('[ImageInputCard] Image selected:', uri);
+      console.log('[ImageInputCard] Image dimensions:', result.assets[0].width, 'x', result.assets[0].height);
       setImageUri(uri);
       onImageSelect?.(uri);
+    } else {
+      console.log('[ImageInputCard] Image selection canceled');
     }
   };
 
   const loadFromUrl = () => {
     if (urlInput.trim()) {
-      setImageUri(urlInput.trim());
-      onImageSelect?.(urlInput.trim());
+      const url = urlInput.trim();
+      console.log('[ImageInputCard] Loading image from URL:', url);
+      setImageUri(url);
+      onImageSelect?.(url);
       setUrlInput('');
       setInputMode('buttons');
+    } else {
+      console.log('[ImageInputCard] Empty URL input, ignoring');
     }
   };
 

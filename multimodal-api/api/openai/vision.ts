@@ -92,10 +92,12 @@ function getModePrompt(mode: string, customPrompt?: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  console.log('Vision API received request:', req.method);
+  console.log('[Vision API] Received request:', req.method);
+  console.log('[Vision API] Request headers:', Object.keys(req.headers));
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('[Vision API] Handling CORS preflight');
     Object.entries(corsHeaders).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
@@ -104,6 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method !== 'POST') {
+    console.log('[Vision API] Invalid method:', req.method);
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -112,17 +115,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = req.headers['x-api-key'] as string;
   const validApiKey = process.env.MULTIMODAL_API_KEY;
   
+  console.log('[Vision API] Auth check - API key provided:', !!apiKey);
+  console.log('[Vision API] Auth check - Valid key configured:', !!validApiKey);
+  
   if (!validApiKey) {
-    console.error('MULTIMODAL_API_KEY not configured in environment');
+    console.error('[Vision API] MULTIMODAL_API_KEY not configured in environment');
     res.status(500).json({ error: 'API authentication not configured' });
     return;
   }
   
   if (!apiKey || apiKey !== validApiKey) {
-    console.log('Invalid API key attempted');
+    console.log('[Vision API] Invalid API key attempted');
     res.status(401).json({ error: 'Unauthorized - Invalid API key' });
     return;
   }
+  
+  console.log('[Vision API] Authentication successful');
 
   try {
     const { 
@@ -135,10 +143,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       customPrompt
     }: VisionRequest = req.body;
 
-    console.log(`Processing vision request: model=${model}, temp=${temperature}, maxTokens=${maxTokens}, mode=${mode}, messages=${messages?.length}`);
+    console.log('[Vision API] Processing request with parameters:');
+    console.log('[Vision API] - Model:', model);
+    console.log('[Vision API] - Temperature:', temperature);
+    console.log('[Vision API] - Max tokens:', maxTokens);
+    console.log('[Vision API] - Mode:', mode);
+    console.log('[Vision API] - Stream:', stream);
+    console.log('[Vision API] - Messages count:', messages?.length || 0);
 
     // Validate messages
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      console.error('[Vision API] Invalid messages - empty or not an array');
       res.status(400).json({ error: 'Messages array is required' });
       return;
     }
@@ -215,21 +230,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Check if we have any images
     if (!hasImages) {
+      console.error('[Vision API] No images found in request');
       res.status(400).json({ 
         error: 'At least one image is required for vision API' 
       });
       return;
     }
 
+    console.log('[Vision API] Found images in request');
+
     // Check total size limit
     if (totalEstimatedSize > MAX_TOTAL_SIZE) {
+      console.error('[Vision API] Total image size exceeds limit');
+      console.error('[Vision API] Estimated size:', Math.round(totalEstimatedSize / 1024 / 1024), 'MB');
       res.status(400).json({ 
         error: `Total image size exceeds 20MB limit. Estimated size: ${Math.round(totalEstimatedSize / 1024 / 1024)}MB` 
       });
       return;
     }
 
-    console.log(`Images validated. Estimated total size: ${Math.round(totalEstimatedSize / 1024 / 1024)}MB`);
+    console.log('[Vision API] Images validated successfully');
+    console.log('[Vision API] Estimated total size:', Math.round(totalEstimatedSize / 1024 / 1024), 'MB');
 
     // Use GPT-4o model with vision capabilities
     const selectedModel = openai(model);
@@ -246,10 +267,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ];
     }
 
-    console.log('Calling OpenAI Vision API...');
+    console.log('[Vision API] Calling OpenAI Vision API...');
+    console.log('[Vision API] Using model:', model);
+    console.log('[Vision API] System prompt length:', systemPrompt.length);
+    console.log('[Vision API] Final messages count:', finalMessages.length);
 
     // For non-streaming response
     if (!stream) {
+      console.log('[Vision API] Non-streaming mode selected');
+      const startTime = Date.now();
+      
       const { text } = await generateText({
         model: selectedModel as any,
         messages: finalMessages as any,
@@ -257,17 +284,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         maxTokens,
       });
       
+      const responseTime = Date.now() - startTime;
+      console.log('[Vision API] OpenAI responded in:', responseTime, 'ms');
+      console.log('[Vision API] Response text length:', text.length);
+      console.log('[Vision API] First 200 chars:', text.substring(0, 200));
+      
       // Set CORS headers
       Object.entries(corsHeaders).forEach(([key, value]) => {
         res.setHeader(key, value);
       });
       
+      const imageCount = messages.filter(m => Array.isArray(m.content) && 
+        m.content.some(c => c.type === 'image')).length;
+      
+      console.log('[Vision API] Sending response with', imageCount, 'images analyzed');
+      
       res.status(200).json({ 
         message: text,
         model,
         mode,
-        totalImages: messages.filter(m => Array.isArray(m.content) && 
-          m.content.some(c => c.type === 'image')).length
+        totalImages: imageCount
       });
       return;
     }
@@ -313,7 +349,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.end();
 
   } catch (error: any) {
-    console.error('Vision API error:', error);
+    console.error('[Vision API] Error occurred:', error.message);
+    console.error('[Vision API] Error stack:', error.stack);
     
     // Set CORS headers even for errors
     Object.entries(corsHeaders).forEach(([key, value]) => {

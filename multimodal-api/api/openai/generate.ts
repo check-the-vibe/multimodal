@@ -24,10 +24,12 @@ interface GenerateResponse {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  console.log('DALL-E Generate API received request:', req.method);
+  console.log('[Generate API] Received request:', req.method);
+  console.log('[Generate API] Request headers:', Object.keys(req.headers));
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('[Generate API] Handling CORS preflight');
     Object.entries(corsHeaders).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
@@ -36,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method !== 'POST') {
+    console.log('[Generate API] Invalid method:', req.method);
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -44,25 +47,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = req.headers['x-api-key'] as string;
   const validApiKey = process.env.MULTIMODAL_API_KEY;
   
+  console.log('[Generate API] Auth check - API key provided:', !!apiKey);
+  console.log('[Generate API] Auth check - Valid key configured:', !!validApiKey);
+  
   if (!validApiKey) {
-    console.error('MULTIMODAL_API_KEY not configured in environment');
+    console.error('[Generate API] MULTIMODAL_API_KEY not configured in environment');
     res.status(500).json({ error: 'API authentication not configured' });
     return;
   }
   
   if (!apiKey || apiKey !== validApiKey) {
-    console.log('Invalid API key attempted');
+    console.log('[Generate API] Invalid API key attempted');
     res.status(401).json({ error: 'Unauthorized - Invalid API key' });
     return;
   }
+  
+  console.log('[Generate API] Authentication successful');
 
   // Check OpenAI API key
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) {
-    console.error('OPENAI_API_KEY not configured in environment');
+    console.error('[Generate API] OPENAI_API_KEY not configured in environment');
     res.status(500).json({ error: 'OpenAI API key not configured' });
     return;
   }
+  
+  console.log('[Generate API] OpenAI API key configured');
 
   try {
     const { 
@@ -73,16 +83,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       n = 1
     }: GenerateRequest = req.body;
 
-    console.log(`Processing DALL-E request: size=${size}, quality=${quality}, style=${style}, n=${n}`);
+    console.log('[Generate API] Processing request with parameters:');
+    console.log('[Generate API] - Prompt:', prompt?.substring(0, 100) + (prompt?.length > 100 ? '...' : ''));
+    console.log('[Generate API] - Prompt length:', prompt?.length, 'characters');
+    console.log('[Generate API] - Size:', size);
+    console.log('[Generate API] - Quality:', quality);
+    console.log('[Generate API] - Style:', style);
+    console.log('[Generate API] - Count (n):', n);
 
     // Validate required parameters
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      console.error('[Generate API] Invalid prompt - empty or not a string');
       res.status(400).json({ error: 'Prompt is required and must be a non-empty string' });
       return;
     }
 
     // Validate prompt length (DALL-E 3 has a 4000 character limit)
     if (prompt.length > 4000) {
+      console.error('[Generate API] Prompt too long:', prompt.length, 'characters');
       res.status(400).json({ error: 'Prompt must be 4000 characters or less' });
       return;
     }
@@ -125,7 +143,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       apiKey: openaiApiKey,
     });
 
-    console.log('Calling DALL-E 3 API...');
+    console.log('[Generate API] Calling DALL-E 3 API...');
+    const startTime = Date.now();
 
     // Generate images using DALL-E 3
     const response = await openai.images.generate({
@@ -137,15 +156,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       n,
     });
 
-    console.log(`DALL-E 3 generated ${response.data.length} image(s)`);
+    const responseTime = Date.now() - startTime;
+    console.log('[Generate API] DALL-E 3 responded in:', responseTime, 'ms');
+    console.log('[Generate API] Generated', response.data.length, 'image(s)');
 
     // Format response
-    const images = response.data.map(image => ({
-      url: image.url || '',
-      revisedPrompt: image.revised_prompt,
-    }));
+    const images = response.data.map((image, index) => {
+      console.log('[Generate API] Image', index + 1, 'URL length:', image.url?.length || 0);
+      if (image.revised_prompt) {
+        console.log('[Generate API] Image', index + 1, 'revised prompt:', image.revised_prompt.substring(0, 100));
+      }
+      return {
+        url: image.url || '',
+        revisedPrompt: image.revised_prompt,
+      };
+    });
 
     const result: GenerateResponse = { images };
+    console.log('[Generate API] Sending response with', images.length, 'image(s)');
 
     // Set CORS headers
     Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -155,7 +183,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json(result);
 
   } catch (error: any) {
-    console.error('DALL-E Generate API error:', error);
+    console.error('[Generate API] Error occurred:', error.message);
+    console.error('[Generate API] Error stack:', error.stack);
     
     // Set CORS headers even for errors
     Object.entries(corsHeaders).forEach(([key, value]) => {
