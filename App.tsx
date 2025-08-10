@@ -24,6 +24,9 @@ import StackPager from './components/ui/StackPager';
 import PaginationDots from './components/ui/PaginationDots';
 import AgentCard from './components/modality/agent/AgentCard';
 import AgentSettingsPanel from './components/modality/agent/AgentSettingsPanel';
+import type { AgentMode } from './components/modality/agent/AgentModeSelector';
+import type { AgentModeSettings } from './components/modality/agent/AgentModeSettings';
+import { getDefaultSettingsForMode } from './services/settingsStorage';
 import SettingsModal from './components/settings/SettingsModal';
 import { streamChat } from './services/agentClient';
 import { parseOutputs } from './services/parseOutput';
@@ -149,15 +152,16 @@ export default function App() {
       console.log('[chat] start streaming');
       let acc = '';
       setChatMessages((arr) => ['…', ...arr]);
-      const messages = appSettings.agent.systemPrompt 
-        ? [{ role: 'system' as const, content: appSettings.agent.systemPrompt }, { role: 'user' as const, content: inputText }]
+      const agentSettings = appSettings.agentMode?.settings || appSettings.agent;
+      const messages = agentSettings.systemPrompt 
+        ? [{ role: 'system' as const, content: agentSettings.systemPrompt }, { role: 'user' as const, content: inputText }]
         : [{ role: 'user' as const, content: inputText }];
       await streamChat({
-        provider: appSettings.agent.provider,
-        model: appSettings.agent.model,
+        provider: 'openai', // Always use OpenAI for agent modes
+        model: agentSettings.model,
         messages,
-        temperature: appSettings.agent.temperature,
-        maxTokens: appSettings.agent.maxTokens,
+        temperature: agentSettings.temperature,
+        maxTokens: agentSettings.maxTokens,
       }, (chunk) => {
         acc += chunk;
         setChatMessages((arr) => [acc, ...arr.slice(1)]);
@@ -191,15 +195,16 @@ export default function App() {
         console.log('[tts] fetching agent reply for TTS…');
         let acc = '';
         setChatMessages((arr) => ['…', ...arr]);
-        const messages = appSettings.agent.systemPrompt 
-          ? [{ role: 'system' as const, content: appSettings.agent.systemPrompt }, { role: 'user' as const, content: inputText }]
+        const agentSettings = appSettings.agentMode?.settings || appSettings.agent;
+        const messages = agentSettings.systemPrompt 
+          ? [{ role: 'system' as const, content: agentSettings.systemPrompt }, { role: 'user' as const, content: inputText }]
           : [{ role: 'user' as const, content: inputText }];
         await streamChat({
-          provider: appSettings.agent.provider,
-          model: appSettings.agent.model,
+          provider: 'openai', // Always use OpenAI for agent modes
+          model: agentSettings.model,
           messages,
-          temperature: appSettings.agent.temperature,
-          maxTokens: appSettings.agent.maxTokens,
+          temperature: agentSettings.temperature,
+          maxTokens: agentSettings.maxTokens,
         }, (chunk) => {
           acc += chunk;
           setChatMessages((arr) => [acc, ...arr.slice(1)]);
@@ -352,19 +357,32 @@ export default function App() {
             <AgentCard 
               expanded={agentExpanded} 
               onToggle={() => setAgentExpanded(!agentExpanded)}
-              provider={appSettings?.agent.provider ? 
-                appSettings.agent.provider.charAt(0).toUpperCase() + appSettings.agent.provider.slice(1) : 
-                'OpenAI'}
-            >
-              {appSettings && (
-                <AgentSettingsPanel
-                  settings={appSettings.agent}
-                  onSettingsChange={(agentSettings) => 
-                    handleSettingsChange({ ...appSettings, agent: agentSettings })
-                  }
-                />
-              )}
-            </AgentCard>
+              selectedMode={appSettings?.agentMode?.selectedMode || 'text'}
+              settings={appSettings?.agentMode?.settings || getDefaultSettingsForMode('text')}
+              onModeChange={(mode: AgentMode) => {
+                if (appSettings) {
+                  const newSettings = getDefaultSettingsForMode(mode);
+                  handleSettingsChange({
+                    ...appSettings,
+                    agentMode: {
+                      selectedMode: mode,
+                      settings: newSettings,
+                    },
+                  });
+                }
+              }}
+              onSettingsChange={(modeSettings: AgentModeSettings) => {
+                if (appSettings) {
+                  handleSettingsChange({
+                    ...appSettings,
+                    agentMode: {
+                      ...appSettings.agentMode,
+                      settings: modeSettings,
+                    },
+                  });
+                }
+              }}
+            />
           </View>
           {/* Output Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>

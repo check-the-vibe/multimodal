@@ -1,15 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import VerticalLabel from '../../ui/VerticalLabel';
+import AgentModeSelector, { type AgentMode, AGENT_MODES } from './AgentModeSelector';
+import AgentModeSettingsPanel, { type AgentModeSettings } from './AgentModeSettings';
 
 export type AgentCardProps = {
   expanded: boolean;
   onToggle: () => void;
-  provider?: string;
-  children?: React.ReactNode;
+  selectedMode: AgentMode;
+  settings: AgentModeSettings;
+  onModeChange: (mode: AgentMode) => void;
+  onSettingsChange: (settings: AgentModeSettings) => void;
 };
 
-export default function AgentCard({ expanded, onToggle, provider = 'OpenAI', children }: AgentCardProps) {
+export default function AgentCard({ 
+  expanded, 
+  onToggle, 
+  selectedMode, 
+  settings, 
+  onModeChange, 
+  onSettingsChange 
+}: AgentCardProps) {
   return (
     <View style={[styles.container, { backgroundColor: '#ffffff' }]}>
       <VerticalLabel text="agent" side="left" />
@@ -20,8 +31,8 @@ export default function AgentCard({ expanded, onToggle, provider = 'OpenAI', chi
           onPress={onToggle}
           style={styles.iconContainer}
         >
-          <Text style={styles.agentIcon}>🤖</Text>
-          <Text style={styles.providerName}>{provider}</Text>
+          <Text style={styles.agentIcon}>{AGENT_MODES.find(mode => mode.id === selectedMode)?.icon || '🤖'}</Text>
+          <Text style={styles.providerName}>{AGENT_MODES.find(mode => mode.id === selectedMode)?.name || 'OpenAI'}</Text>
           <Text style={styles.hintSmall}>Tap to configure</Text>
         </Pressable>
       ) : (
@@ -32,7 +43,16 @@ export default function AgentCard({ expanded, onToggle, provider = 'OpenAI', chi
               <Text style={styles.closeButtonText}>✕</Text>
             </Pressable>
           </View>
-          {children}
+          <AgentModeSelector 
+            selectedMode={selectedMode} 
+            onModeChange={onModeChange}
+            layout="list"
+          />
+          <View style={styles.settingsDivider} />
+          <AgentModeSettingsPanel 
+            settings={settings} 
+            onSettingsChange={onSettingsChange}
+          />
         </View>
       )}
     </View>
@@ -94,5 +114,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#6b7280',
     fontWeight: '600',
+  },
+  settingsDivider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginVertical: 16,
   },
 });
