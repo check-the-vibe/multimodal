@@ -311,7 +311,6 @@ export default function App() {
                 style={styles.iconContainer}
               >
                 <Text style={styles.chatIcon}>💬</Text>
-                <Text style={styles.hintSmall}>Tap to chat</Text>
               </Pressable>
             ) : (
               <>
