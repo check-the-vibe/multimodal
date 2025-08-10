@@ -8,7 +8,7 @@ export type OutputImagePanelProps = {
   uri?: string | null;
   uris?: (string | null | undefined)[];
   alt?: string;
-  generatedImages?: string[];
+  generatedImages?: any[]; // Can be strings or objects with url property
 };
 
 export default function OutputImagePanel({ uri, uris, alt = 'Last image', generatedImages }: OutputImagePanelProps) {
@@ -20,8 +20,19 @@ export default function OutputImagePanel({ uri, uris, alt = 'Last image', genera
     
     // Add generated images first (from DALL-E)
     if (generatedImages?.length) {
-      console.log('[OutputImagePanel] Adding', generatedImages.length, 'generated images');
-      arr.push(...generatedImages.filter(Boolean));
+      console.log('[OutputImagePanel] Processing', generatedImages.length, 'generated images');
+      // Handle both string URLs and objects with url property
+      const processedImages = generatedImages.map((img: any) => {
+        if (typeof img === 'string') {
+          return img;
+        } else if (img && typeof img === 'object' && img.url) {
+          console.log('[OutputImagePanel] Extracting URL from image object');
+          return img.url;
+        }
+        return null;
+      }).filter(Boolean);
+      console.log('[OutputImagePanel] Adding', processedImages.length, 'valid image URLs');
+      arr.push(...processedImages);
     }
     
     // Add other images
@@ -36,6 +47,9 @@ export default function OutputImagePanel({ uri, uris, alt = 'Last image', genera
     
     const uniqueList = Array.from(new Set(arr));
     console.log('[OutputImagePanel] Total unique images:', uniqueList.length);
+    if (uniqueList.length > 0) {
+      console.log('[OutputImagePanel] First image URL:', uniqueList[0]?.substring(0, 100));
+    }
     return uniqueList;
   }, [uri, uris, generatedImages]);
 
@@ -43,10 +57,17 @@ export default function OutputImagePanel({ uri, uris, alt = 'Last image', genera
     console.log('[OutputImagePanel] Download requested for image', index + 1);
     console.log('[OutputImagePanel] Image URL:', imageUrl.substring(0, 100) + '...');
     
+    // Validate URL
+    if (!imageUrl || !imageUrl.startsWith('http')) {
+      console.error('[OutputImagePanel] Invalid image URL:', imageUrl);
+      Alert.alert('Error', 'Invalid image URL');
+      return;
+    }
+    
     if (Platform.OS === 'web') {
       console.log('[OutputImagePanel] Web platform detected, opening in new tab');
       // For web, open in new tab
-      Linking.openURL(imageUrl);
+      window.open(imageUrl, '_blank');
       return;
     }
 
@@ -110,7 +131,19 @@ export default function OutputImagePanel({ uri, uris, alt = 'Last image', genera
           <View style={styles.grid}>
             {list.map((u, i) => (
               <View key={i} style={styles.imageContainer}>
-                <Image source={{ uri: u }} style={[styles.img, expanded && styles.imgLg]} accessibilityLabel={alt} />
+                <Image 
+                  source={{ uri: u }} 
+                  style={[styles.img, expanded && styles.imgLg]} 
+                  accessibilityLabel={alt}
+                  resizeMode="cover"
+                  onError={(e) => {
+                    console.error('[OutputImagePanel] Image failed to load:', u);
+                    console.error('[OutputImagePanel] Error details:', e.nativeEvent.error);
+                  }}
+                  onLoad={() => {
+                    console.log('[OutputImagePanel] Image loaded successfully:', u.substring(0, 100));
+                  }}
+                />
                 {generatedImages?.includes(u) && (
                   <TouchableOpacity 
                     style={styles.downloadButton}
@@ -139,7 +172,7 @@ const styles = StyleSheet.create({
   imageContainer: { 
     position: 'relative',
   },
-  img: { width: 120, height: 72, borderRadius: 6, backgroundColor: '#000' },
+  img: { width: 120, height: 72, borderRadius: 6, backgroundColor: '#f3f4f6' },
   imgLg: { width: 160, height: 96 },
   downloadButton: {
     position: 'absolute',

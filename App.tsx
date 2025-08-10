@@ -258,9 +258,12 @@ export default function App() {
       if (data.images && data.images.length > 0) {
         console.log('[CreateAgent] First image URL preview:', data.images[0].url?.substring(0, 100) + '...');
         console.log('[CreateAgent] Revised prompt:', data.images[0].revised_prompt?.substring(0, 100));
-        setGeneratedImages((prev) => [...data.images, ...prev]);
+        // Extract just the URLs from the image objects
+        const imageUrls = data.images.map((img: any) => img.url).filter(Boolean);
+        console.log('[CreateAgent] Extracted', imageUrls.length, 'image URLs');
+        setGeneratedImages((prev) => [...imageUrls, ...prev]);
         setSelectedOutputIndex(2); // Switch to image output
-        console.log('[CreateAgent] Image added to gallery, switched to image output');
+        console.log('[CreateAgent] Image URLs added to gallery, switched to image output');
       } else {
         console.warn('[CreateAgent] No images in response');
       }

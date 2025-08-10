@@ -1,5 +1,7 @@
 <bugs>
 
+CREATE-01: Image output card does not seem to work, shows a blacked-out image, with a save icon that does not work appropriately
+
 </bugs>
 
 
