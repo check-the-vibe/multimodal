@@ -44,9 +44,7 @@ export default function App() {
   const { width, height } = useWindowDimensions();
 
   // Core interface state
-  const [inputExpanded, setInputExpanded] = useState(false);
   const [agentExpanded, setAgentExpanded] = useState(false);
-  const [outputExpanded, setOutputExpanded] = useState(true); // Default to expanded so users can swipe
   const [textInput, setTextInput] = useState('');
   const [selectedInputIndex, setSelectedInputIndex] = useState(0);
   const [isSending, setIsSending] = useState(false);
@@ -298,22 +296,11 @@ export default function App() {
           {/* Input Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
             <VerticalLabel text="input" side="left" />
-            {!inputExpanded ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Start chat"
-                onPress={() => setInputExpanded(true)}
-                style={styles.iconContainer}
-              >
-                <Text style={styles.chatIcon}>💬</Text>
-              </Pressable>
-            ) : (
-              <>
-                <StackPager
-                  items={[...inputTypes]}
-                  selectedIndex={selectedInputIndex}
-                  onIndexChange={setSelectedInputIndex}
-                  renderItem={(type, idx, selected) => (
+            <StackPager
+              items={[...inputTypes]}
+              selectedIndex={selectedInputIndex}
+              onIndexChange={setSelectedInputIndex}
+              renderItem={(type, idx, selected) => (
                     type === 'text' ? (
                       <InputTextCard 
                         value={textInput} 
@@ -352,15 +339,13 @@ export default function App() {
                         isSending={isSending}
                       />
                     ) : null
-                  )}
-                />
-                <PaginationDots
-                  count={inputTypes.length}
-                  index={selectedInputIndex}
-                  onDotPress={setSelectedInputIndex}
-                />
-              </>
-            )}
+              )}
+            />
+            <PaginationDots
+              count={inputTypes.length}
+              index={selectedInputIndex}
+              onDotPress={setSelectedInputIndex}
+            />
           </View>
           {/* Agent Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
@@ -384,22 +369,11 @@ export default function App() {
           {/* Output Section */}
           <View style={[styles.half, styles.panel, { backgroundColor: '#ffffff' }]}>
             <VerticalLabel text="output" side="left" />
-            {!outputExpanded ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Show outputs"
-                onPress={() => setOutputExpanded(true)}
-                style={styles.iconContainer}
-              >
-                <Text style={styles.chatIcon}>🗨️</Text>
-              </Pressable>
-            ) : (
-              <>
-                <StackPager
-                  items={outputTypes}
-                  selectedIndex={selectedOutputIndex}
-                  onIndexChange={setSelectedOutputIndex}
-                  renderItem={(type, idx, selected) => (
+            <StackPager
+              items={outputTypes}
+              selectedIndex={selectedOutputIndex}
+              onIndexChange={setSelectedOutputIndex}
+              renderItem={(type, idx, selected) => (
                     type === 'chat' ? (
                       <OutputChatPanel messages={chatMessages} />
                     ) : type === 'audio' ? (
@@ -415,15 +389,13 @@ export default function App() {
                     ) : type === 'file' ? (
                       <OutputFilePanel files={files} />
                     ) : null
-                  )}
-                />
-                <PaginationDots
-                  count={outputTypes.length}
-                  index={selectedOutputIndex}
-                  onDotPress={setSelectedOutputIndex}
-                />
-              </>
-            )}
+              )}
+            />
+            <PaginationDots
+              count={outputTypes.length}
+              index={selectedOutputIndex}
+              onDotPress={setSelectedOutputIndex}
+            />
           </View>
             </View>
           </ScrollView>
