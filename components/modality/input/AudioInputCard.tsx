@@ -3,14 +3,18 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react
 import { Audio } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
 import ModalityCard from '../../ui/ModalityCard';
+import type { AgentMode } from '../agent/AgentModeSelector';
+import { API_BASE_URL, MULTIMODAL_API_KEY } from '../../../services/config';
 
 export type AudioInputCardProps = {
   onAudioSelect?: (uri: string) => void;
   onSend?: () => void;
   isSending?: boolean;
+  agentMode?: AgentMode;
+  onTranscriptionResult?: (transcription: string) => void;
 };
 
-export default function AudioInputCard({ onAudioSelect, onSend, isSending = false }: AudioInputCardProps) {
+export default function AudioInputCard({ onAudioSelect, onSend, isSending = false, agentMode, onTranscriptionResult }: AudioInputCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
@@ -18,6 +22,47 @@ export default function AudioInputCard({ onAudioSelect, onSend, isSending = fals
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [duration, setDuration] = useState(0);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const transcribeAudio = async () => {
+    if (!audioUri || !onTranscriptionResult) return;
+    
+    setIsTranscribing(true);
+    try {
+      // Create FormData for audio file upload
+      const formData = new FormData();
+      
+      // Create a file object from the audio URI
+      const audioFile = {
+        uri: audioUri,
+        type: 'audio/mp4', // or appropriate audio type
+        name: 'audio.mp4',
+      } as any;
+      
+      formData.append('audio', audioFile);
+      formData.append('model', 'whisper-1');
+
+      const response = await fetch(`${API_BASE_URL}/api/openai/transcribe`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': MULTIMODAL_API_KEY,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      onTranscriptionResult(data.text || data.transcription || 'Transcription complete');
+    } catch (error) {
+      console.error('Transcription error:', error);
+      Alert.alert('Transcription Error', error instanceof Error ? error.message : 'Failed to transcribe audio');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -192,7 +237,18 @@ export default function AudioInputCard({ onAudioSelect, onSend, isSending = fals
               <TouchableOpacity style={styles.controlButton} onPress={clearAudio}>
                 <Text style={styles.controlIcon}>🗑️</Text>
               </TouchableOpacity>
-              {onSend && (
+              {agentMode === 'transcribe' && onTranscriptionResult && (
+                <TouchableOpacity 
+                  style={[styles.transcribeButton, isTranscribing && styles.sendButtonDisabled]} 
+                  onPress={!isTranscribing ? transcribeAudio : undefined}
+                  disabled={isTranscribing}
+                >
+                  <Text style={styles.transcribeButtonText}>
+                    {isTranscribing ? 'Transcribing...' : '🎤 Transcribe'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {onSend && agentMode !== 'transcribe' && (
                 <TouchableOpacity 
                   style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
                   onPress={!isSending ? onSend : undefined}
@@ -366,5 +422,16 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.6,
+  },
+  transcribeButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  transcribeButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

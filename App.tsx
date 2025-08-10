@@ -69,6 +69,7 @@ export default function App() {
   const [ttsStatus, setTtsStatus] = useState<'idle' | 'speaking' | 'error'>('idle');
   // Demo data for new output cards
   const [lastImage, setLastImage] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [codeSnippet, setCodeSnippet] = useState<string>(`function hello(name) {\n  return 'Hello, ' + name;\n}`);
   const [tableRows, setTableRows] = useState<Array<Record<string, any>>>([
     { item: 'Apples', qty: 4, price: 2.5 },
@@ -140,6 +141,56 @@ export default function App() {
     await saveSettings(settings);
   };
 
+  const handleVisionAnalysis = (analysis: string) => {
+    // Add the vision analysis to chat messages
+    setChatMessages((prev) => [analysis, ...prev]);
+    // Switch to chat output to see the result
+    setSelectedOutputIndex(0);
+  };
+
+  const handleTranscriptionResult = (transcription: string) => {
+    // Add the transcription to chat messages
+    setChatMessages((prev) => [transcription, ...prev]);
+    // Switch to chat output to see the result
+    setSelectedOutputIndex(0);
+  };
+
+  const handleImageGeneration = async (prompt: string) => {
+    if (!appSettings) return;
+
+    setIsSending(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/openai/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.EXPO_PUBLIC_MULTIMODAL_API_KEY || 'mm_469eade2349b909e92b789cf1533dc3592f08480d9f6a0794ba09b94ac29669d',
+        },
+        body: JSON.stringify({
+          prompt,
+          model: 'dall-e-3',
+          n: 1,
+          size: '1024x1024',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (data.images && data.images.length > 0) {
+        setGeneratedImages((prev) => [...data.images, ...prev]);
+        setSelectedOutputIndex(2); // Switch to image output
+      }
+    } catch (error) {
+      console.error('Image generation error:', error);
+      setChatMessages((prev) => [`Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`, ...prev]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!textInput.trim() || !appSettings || isSending) return;
     
@@ -147,8 +198,20 @@ export default function App() {
     
     const inputText = textInput.trim();
     const selectedOutput = outputTypes[selectedOutputIndex];
-    console.log('[send] Platform:', Platform.OS, 'Selected output:', selectedOutput, 'Text length:', inputText.length);
-    if (selectedOutput === 'chat') {
+    const agentMode = appSettings.agentMode?.selectedMode || 'text';
+    
+    console.log('[send] Platform:', Platform.OS, 'Agent mode:', agentMode, 'Selected output:', selectedOutput, 'Text length:', inputText.length);
+    
+    // Route based on agent mode
+    if (agentMode === 'create') {
+      // DALL-E image generation
+      await handleImageGeneration(inputText);
+      setTextInput('');
+      setIsSending(false);
+      return;
+    }
+    
+    if (selectedOutput === 'chat' || agentMode === 'text' || agentMode === 'code' || agentMode === 'vision') {
       console.log('[chat] start streaming');
       let acc = '';
       setChatMessages((arr) => ['…', ...arr]);
@@ -191,6 +254,16 @@ export default function App() {
           await Speech.stop();
           console.log('[tts] stop called');
         } catch (e) { console.log('[tts] stop error', e); }
+        
+        if (agentMode === 'speak') {
+          // Use OpenAI TTS directly - let the OutputTTSPanel handle it
+          console.log('[tts] Using OpenAI TTS for speak mode');
+          setTextInput('');
+          setIsSending(false);
+          setSelectedOutputIndex(1); // Switch to audio output
+          return;
+        }
+        
         // 1) Get agent response via streaming, mirror to chat
         console.log('[tts] fetching agent reply for TTS…');
         let acc = '';
@@ -318,12 +391,16 @@ export default function App() {
                         onImageSelect={(uri) => setInputData(prev => ({ ...prev, image: uri }))}
                         onSend={handleSend}
                         isSending={isSending}
+                        agentMode={appSettings?.agentMode?.selectedMode}
+                        onVisionAnalysis={handleVisionAnalysis}
                       />
                     ) : type === 'audio' ? (
                       <AudioInputCard 
                         onAudioSelect={(uri) => setInputData(prev => ({ ...prev, audio: uri }))}
                         onSend={handleSend}
                         isSending={isSending}
+                        agentMode={appSettings?.agentMode?.selectedMode}
+                        onTranscriptionResult={handleTranscriptionResult}
                       />
                     ) : type === 'file' ? (
                       <FileInputCard 
@@ -395,9 +472,17 @@ export default function App() {
                     type === 'chat' ? (
                       <OutputChatPanel messages={chatMessages} />
                     ) : type === 'audio' ? (
-                      <OutputTTSPanel status={ttsStatus} />
+                      <OutputTTSPanel 
+                        status={ttsStatus} 
+                        agentMode={appSettings?.agentMode?.selectedMode}
+                        textToSpeak={textInput}
+                        voice={appSettings?.agentMode?.settings?.voice || 'alloy'}
+                      />
                     ) : type === 'image' ? (
-                      <OutputImagePanel uri={lastImage ?? null} />
+                      <OutputImagePanel 
+                        uri={lastImage ?? null} 
+                        generatedImages={generatedImages}
+                      />
                     ) : type === 'code' ? (
                       <OutputCodePanel code={codeSnippet} language={'js'} />
                     ) : type === 'table' ? (

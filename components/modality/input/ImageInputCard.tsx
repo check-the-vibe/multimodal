@@ -2,18 +2,54 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, TextInput, StyleSheet, Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import ModalityCard from '../../ui/ModalityCard';
+import type { AgentMode } from '../agent/AgentModeSelector';
+import { API_BASE_URL, MULTIMODAL_API_KEY } from '../../../services/config';
 
 export type ImageInputCardProps = {
   onImageSelect?: (uri: string) => void;
   onSend?: () => void;
   isSending?: boolean;
+  agentMode?: AgentMode;
+  onVisionAnalysis?: (analysis: string) => void;
 };
 
-export default function ImageInputCard({ onImageSelect, onSend, isSending = false }: ImageInputCardProps) {
+export default function ImageInputCard({ onImageSelect, onSend, isSending = false, agentMode, onVisionAnalysis }: ImageInputCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [inputMode, setInputMode] = useState<'buttons' | 'url'>('buttons');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const analyzeWithVision = async () => {
+    if (!imageUri || !onVisionAnalysis) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/openai/vision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': MULTIMODAL_API_KEY,
+        },
+        body: JSON.stringify({
+          imageUrl: imageUri,
+          prompt: 'Analyze this image and describe what you see in detail.',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      onVisionAnalysis(data.analysis || data.message || 'Analysis complete');
+    } catch (error) {
+      console.error('Vision analysis error:', error);
+      Alert.alert('Analysis Error', error instanceof Error ? error.message : 'Failed to analyze image');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const requestCameraPermission = async () => {
     if (Platform.OS !== 'web') {
@@ -114,7 +150,18 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
               <TouchableOpacity style={styles.clearButton} onPress={clearImage}>
                 <Text style={styles.clearButtonText}>✕ Clear</Text>
               </TouchableOpacity>
-              {onSend && (
+              {agentMode === 'vision' && onVisionAnalysis && (
+                <TouchableOpacity 
+                  style={[styles.visionButton, isAnalyzing && styles.sendButtonDisabled]} 
+                  onPress={!isAnalyzing ? analyzeWithVision : undefined}
+                  disabled={isAnalyzing}
+                >
+                  <Text style={styles.visionButtonText}>
+                    {isAnalyzing ? 'Analyzing...' : '👁️ Analyze'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {onSend && agentMode !== 'vision' && (
                 <TouchableOpacity 
                   style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
                   onPress={!isSending ? onSend : undefined}
@@ -273,6 +320,19 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.6,
+  },
+  visionButton: {
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    flex: 1,
+    alignItems: 'center',
+  },
+  visionButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   urlContainer: {
     padding: 10,
