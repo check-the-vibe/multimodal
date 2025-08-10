@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import ModalityCard from '../../ui/ModalityCard';
 import { type AgentModeSettings } from './AgentModeSettings';
@@ -10,6 +10,14 @@ export type CreateAgentCardProps = {
 
 export default function CreateAgentCard({ settings, onSettingsChange }: CreateAgentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  React.useEffect(() => {
+    console.log('[CreateAgentCard] Component mounted with settings:', settings);
+  }, []);
+  
+  React.useEffect(() => {
+    console.log('[CreateAgentCard] Settings updated:', settings);
+  }, [settings]);
 
   if (!isExpanded) {
     return (

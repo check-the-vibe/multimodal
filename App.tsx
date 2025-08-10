@@ -75,6 +75,11 @@ export default function App() {
   // Get current agent mode
   const currentAgentMode = agentTypes[selectedAgentIndex];
   
+  React.useEffect(() => {
+    console.log('[App] Agent mode changed to:', currentAgentMode);
+    console.log('[App] Agent index:', selectedAgentIndex);
+  }, [currentAgentMode, selectedAgentIndex]);
+  
   // Filter input and output types based on current agent mode
   const inputTypes = filterInputTypes([...allInputTypes], currentAgentMode) as InputType[];
   const outputTypes = filterOutputTypes(allOutputTypes, currentAgentMode) as OutputType[];

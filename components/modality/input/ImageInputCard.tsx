@@ -20,6 +20,14 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
   const [urlInput, setUrlInput] = useState('');
   const [inputMode, setInputMode] = useState<'buttons' | 'url'>('buttons');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  React.useEffect(() => {
+    console.log('[ImageInputCard] Component mounted, agentMode:', agentMode);
+  }, []);
+  
+  React.useEffect(() => {
+    console.log('[ImageInputCard] Agent mode changed to:', agentMode);
+  }, [agentMode]);
 
   const analyzeWithVision = async () => {
     if (!imageUri || !onVisionAnalysis) return;
@@ -228,7 +236,10 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
   if (!isExpanded) {
     return (
       <ModalityCard tone="input" label="Image">
-        <TouchableOpacity style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+        <TouchableOpacity style={styles.collapsedContainer} onPress={() => {
+          console.log('[ImageInputCard] Expanding card');
+          setIsExpanded(true);
+        }}>
           <Text style={styles.icon}>📷</Text>
           <Text style={styles.collapsedText}>Tap to add image</Text>
         </TouchableOpacity>
