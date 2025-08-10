@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, TextInput, StyleSheet, Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import ModalityCard from '../../ui/ModalityCard';
 import type { AgentMode } from '../agent/AgentModeSelector';
 import { API_BASE_URL, MULTIMODAL_API_KEY } from '../../../services/config';
@@ -25,6 +26,46 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
     
     setIsAnalyzing(true);
     try {
+      // Prepare the image content based on whether it's a URL or local file
+      let imageContent;
+      if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+        // URL image
+        imageContent = {
+          type: 'image',
+          image: {
+            url: imageUri
+          }
+        };
+      } else if (imageUri.startsWith('data:image')) {
+        // Base64 image
+        imageContent = {
+          type: 'image',
+          image: imageUri
+        };
+      } else {
+        // Local file - convert to base64
+        try {
+          const base64 = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          // Add data URI prefix
+          const mimeType = imageUri.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+          imageContent = {
+            type: 'image',
+            image: `data:image/${mimeType};base64,${base64}`
+          };
+        } catch (err) {
+          console.error('Failed to convert local image to base64:', err);
+          // Fallback to URL format
+          imageContent = {
+            type: 'image',
+            image: {
+              url: imageUri
+            }
+          };
+        }
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/openai/vision`, {
         method: 'POST',
         headers: {
@@ -32,17 +73,26 @@ export default function ImageInputCard({ onImageSelect, onSend, isSending = fals
           'x-api-key': MULTIMODAL_API_KEY,
         },
         body: JSON.stringify({
-          imageUrl: imageUri,
-          prompt: 'Analyze this image and describe what you see in detail.',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Analyze this image and describe what you see in detail.' },
+              imageContent
+            ]
+          }],
+          mode: 'analyze',
+          stream: false
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorData = await response.text();
+        console.error('Vision API error:', response.status, errorData);
+        throw new Error(`Vision API error: ${response.status} - ${errorData}`);
       }
 
       const data = await response.json();
-      onVisionAnalysis(data.analysis || data.message || 'Analysis complete');
+      onVisionAnalysis(data.message || data.analysis || 'Analysis complete');
     } catch (error) {
       console.error('Vision analysis error:', error);
       Alert.alert('Analysis Error', error instanceof Error ? error.message : 'Failed to analyze image');

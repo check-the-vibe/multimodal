@@ -1,25 +1,9 @@
-<prep>
-✅ TESTING PLAN CREATED (2025-08-10)
-
-Comprehensive testing documentation has been created covering all OpenAI agent permutations:
-
-📁 Testing Documentation:
-- `/docs/testing-plan.md` - Full testing plan with 150+ test cases
-- `/docs/testing-checklist.md` - Quick reference checklist with priority matrix
-- `/docs/test-data.md` - Specific test prompts and expected outcomes
-
-Testing Coverage:
-- 6 Agent Modes (Text, Vision, Create, Transcribe, Speak, Code)
-- 6 Input Types (text, image, audio, file, drawing, clipboard)
-- 7 Output Types (chat, audio, image, code, table, chart, file)
-- 30+ core permutation tests
-- 50+ edge case tests
-- 20+ platform-specific tests
-
-Ready to execute testing and file bugs individually.
-</prep>
-
 <bugs>
+Output Card: On push of data to code and table expand in size as an agent is 'thinking'.
+
+TEXT-06: Send button does not work on clipboard input
+VISION-01: 404 when pressing "analyze" button in image input card. 
+
 
 </bugs>
 
