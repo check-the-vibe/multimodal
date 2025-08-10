@@ -6,9 +6,11 @@ import ModalityCard from '../../ui/ModalityCard';
 export type ImageInputCardProps = {
   onImageSelect?: (uri: string) => void;
   onSend?: () => void;
+  isSending?: boolean;
 };
 
-export default function ImageInputCard({ onImageSelect, onSend }: ImageInputCardProps) {
+export default function ImageInputCard({ onImageSelect, onSend, isSending = false }: ImageInputCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [inputMode, setInputMode] = useState<'buttons' | 'url'>('buttons');
@@ -85,9 +87,26 @@ export default function ImageInputCard({ onImageSelect, onSend }: ImageInputCard
     setUrlInput('');
   };
 
+  if (!isExpanded) {
+    return (
+      <ModalityCard tone="input" label="Image">
+        <TouchableOpacity style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+          <Text style={styles.icon}>📷</Text>
+          <Text style={styles.collapsedText}>Tap to add image</Text>
+        </TouchableOpacity>
+      </ModalityCard>
+    );
+  }
+
   return (
     <ModalityCard tone="input" label="Image">
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Image Input</Text>
+          <TouchableOpacity onPress={() => setIsExpanded(false)} style={styles.collapseButton}>
+            <Text style={styles.collapseButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
         {imageUri ? (
           <View style={styles.imageContainer}>
             <Image source={{ uri: imageUri }} style={styles.image} />
@@ -96,8 +115,14 @@ export default function ImageInputCard({ onImageSelect, onSend }: ImageInputCard
                 <Text style={styles.clearButtonText}>✕ Clear</Text>
               </TouchableOpacity>
               {onSend && (
-                <TouchableOpacity style={styles.sendButton} onPress={onSend}>
-                  <Text style={styles.sendButtonText}>Send ➤</Text>
+                <TouchableOpacity 
+                  style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
+                  onPress={!isSending ? onSend : undefined}
+                  disabled={isSending}
+                >
+                  <Text style={styles.sendButtonText}>
+                    {isSending ? 'Sending...' : 'Send ➤'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -148,8 +173,41 @@ export default function ImageInputCard({ onImageSelect, onSend }: ImageInputCard
 }
 
 const styles = StyleSheet.create({
+  collapsedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    minHeight: 150,
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  collapsedText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
   container: {
-    minHeight: 120,
+    minHeight: 150,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  collapseButton: {
+    padding: 4,
+  },
+  collapseButtonText: {
+    fontSize: 18,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -212,6 +270,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
   urlContainer: {
     padding: 10,

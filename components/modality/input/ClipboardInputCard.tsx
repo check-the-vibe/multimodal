@@ -5,9 +5,12 @@ import ModalityCard from '../../ui/ModalityCard';
 
 export type ClipboardInputCardProps = {
   onClipboardPaste?: (content: string, type: 'text' | 'image' | 'html') => void;
+  onSend?: () => void;
+  isSending?: boolean;
 };
 
-export default function ClipboardInputCard({ onClipboardPaste }: ClipboardInputCardProps) {
+export default function ClipboardInputCard({ onClipboardPaste, onSend, isSending = false }: ClipboardInputCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [clipboardContent, setClipboardContent] = useState<{
     type: 'text' | 'image' | 'html';
     content: string;
@@ -76,9 +79,26 @@ export default function ClipboardInputCard({ onClipboardPaste }: ClipboardInputC
     }
   };
 
+  if (!isExpanded) {
+    return (
+      <ModalityCard tone="input" label="Clipboard">
+        <TouchableOpacity style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+          <Text style={styles.icon}>📋</Text>
+          <Text style={styles.collapsedText}>Tap to paste</Text>
+        </TouchableOpacity>
+      </ModalityCard>
+    );
+  }
+
   return (
     <ModalityCard tone="input" label="Clipboard">
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Clipboard Input</Text>
+          <TouchableOpacity onPress={() => setIsExpanded(false)} style={styles.collapseButton}>
+            <Text style={styles.collapseButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
         {clipboardContent ? (
           <View style={styles.contentContainer}>
             <View style={styles.contentHeader}>
@@ -95,6 +115,17 @@ export default function ClipboardInputCard({ onClipboardPaste }: ClipboardInputC
                 <TouchableOpacity style={styles.actionButton} onPress={clearContent}>
                   <Text style={styles.actionIcon}>✕</Text>
                 </TouchableOpacity>
+                {onSend && (
+                  <TouchableOpacity 
+                    style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
+                    onPress={!isSending ? onSend : undefined}
+                    disabled={isSending}
+                  >
+                    <Text style={styles.sendButtonText}>
+                      {isSending ? 'Sending...' : 'Send ➤'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
             
@@ -131,8 +162,41 @@ export default function ClipboardInputCard({ onClipboardPaste }: ClipboardInputC
 }
 
 const styles = StyleSheet.create({
+  collapsedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    minHeight: 150,
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  collapsedText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
   container: {
     minHeight: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  collapseButton: {
+    padding: 4,
+  },
+  collapseButtonText: {
+    fontSize: 18,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   pasteButton: {
     alignItems: 'center',
@@ -217,5 +281,19 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 6,
     fontStyle: 'italic',
+  },
+  sendButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
 });

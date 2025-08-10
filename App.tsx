@@ -49,6 +49,7 @@ export default function App() {
   const [outputExpanded, setOutputExpanded] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [selectedInputIndex, setSelectedInputIndex] = useState(0);
+  const [isSending, setIsSending] = useState(false);
   const inputTypes = ['text', 'image', 'audio', 'file', 'drawing', 'clipboard'] as const;
   type InputType = typeof inputTypes[number];
   const [inputData, setInputData] = useState<Record<InputType, unknown>>({ 
@@ -139,7 +140,9 @@ export default function App() {
   };
 
   const handleSend = async () => {
-    if (!textInput.trim() || !appSettings) return;
+    if (!textInput.trim() || !appSettings || isSending) return;
+    
+    setIsSending(true);
     
     // Expand output section when sending first message
     if (!outputExpanded) {
@@ -181,6 +184,7 @@ export default function App() {
         if (parsed.files?.length) setFiles(parsed.files);
       } catch {}
       setTextInput('');
+      setIsSending(false);
     } else if (selectedOutput === 'audio') {
       try {
         // Stop any ongoing utterance before starting a new one
@@ -247,6 +251,7 @@ export default function App() {
         Alert.alert('TTS Error', 'Unable to speak the text.');
       } finally {
         setTextInput('');
+        setIsSending(false);
       }
     }
   };
@@ -320,31 +325,37 @@ export default function App() {
                         value={textInput} 
                         onChange={setTextInput}
                         onSend={handleSend}
+                        isSending={isSending}
                       />
                     ) : type === 'image' ? (
                       <ImageInputCard 
                         onImageSelect={(uri) => setInputData(prev => ({ ...prev, image: uri }))}
                         onSend={handleSend}
+                        isSending={isSending}
                       />
                     ) : type === 'audio' ? (
                       <AudioInputCard 
                         onAudioSelect={(uri) => setInputData(prev => ({ ...prev, audio: uri }))}
                         onSend={handleSend}
+                        isSending={isSending}
                       />
                     ) : type === 'file' ? (
                       <FileInputCard 
                         onFileSelect={(uri, name) => setInputData(prev => ({ ...prev, file: { uri, name } }))}
                         onSend={handleSend}
+                        isSending={isSending}
                       />
                     ) : type === 'drawing' ? (
                       <DrawingInputCard 
                         onDrawingComplete={(svg) => setInputData(prev => ({ ...prev, drawing: svg }))}
                         onSend={handleSend}
+                        isSending={isSending}
                       />
                     ) : type === 'clipboard' ? (
                       <ClipboardInputCard 
                         onClipboardPaste={(content, type) => setInputData(prev => ({ ...prev, clipboard: { content, type } }))}
                         onSend={handleSend}
+                        isSending={isSending}
                       />
                     ) : null
                   )}

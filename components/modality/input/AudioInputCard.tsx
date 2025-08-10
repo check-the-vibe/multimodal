@@ -7,9 +7,11 @@ import ModalityCard from '../../ui/ModalityCard';
 export type AudioInputCardProps = {
   onAudioSelect?: (uri: string) => void;
   onSend?: () => void;
+  isSending?: boolean;
 };
 
-export default function AudioInputCard({ onAudioSelect, onSend }: AudioInputCardProps) {
+export default function AudioInputCard({ onAudioSelect, onSend, isSending = false }: AudioInputCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -155,9 +157,26 @@ export default function AudioInputCard({ onAudioSelect, onSend }: AudioInputCard
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  if (!isExpanded) {
+    return (
+      <ModalityCard tone="input" label="Audio">
+        <TouchableOpacity style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+          <Text style={styles.icon}>🎙️</Text>
+          <Text style={styles.collapsedText}>Tap to record audio</Text>
+        </TouchableOpacity>
+      </ModalityCard>
+    );
+  }
+
   return (
     <ModalityCard tone="input" label="Audio">
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Audio Input</Text>
+          <TouchableOpacity onPress={() => setIsExpanded(false)} style={styles.collapseButton}>
+            <Text style={styles.collapseButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
         {audioUri ? (
           <View style={styles.audioContainer}>
             <View style={styles.audioInfo}>
@@ -174,8 +193,14 @@ export default function AudioInputCard({ onAudioSelect, onSend }: AudioInputCard
                 <Text style={styles.controlIcon}>🗑️</Text>
               </TouchableOpacity>
               {onSend && (
-                <TouchableOpacity style={styles.sendButton} onPress={onSend}>
-                  <Text style={styles.sendButtonText}>Send ➤</Text>
+                <TouchableOpacity 
+                  style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
+                  onPress={!isSending ? onSend : undefined}
+                  disabled={isSending}
+                >
+                  <Text style={styles.sendButtonText}>
+                    {isSending ? 'Sending...' : 'Send ➤'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -208,8 +233,41 @@ export default function AudioInputCard({ onAudioSelect, onSend }: AudioInputCard
 }
 
 const styles = StyleSheet.create({
+  collapsedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    minHeight: 150,
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  collapsedText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
   container: {
     minHeight: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  collapseButton: {
+    padding: 4,
+  },
+  collapseButtonText: {
+    fontSize: 18,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -305,5 +363,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
 });

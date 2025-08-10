@@ -5,9 +5,12 @@ import ModalityCard from '../../ui/ModalityCard';
 
 export type FileInputCardProps = {
   onFileSelect?: (uri: string, name: string, mimeType?: string) => void;
+  onSend?: () => void;
+  isSending?: boolean;
 };
 
-export default function FileInputCard({ onFileSelect }: FileInputCardProps) {
+export default function FileInputCard({ onFileSelect, onSend, isSending = false }: FileInputCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [selectedFile, setSelectedFile] = useState<{
     uri: string;
     name: string;
@@ -67,9 +70,26 @@ export default function FileInputCard({ onFileSelect }: FileInputCardProps) {
     return '📄';
   };
 
+  if (!isExpanded) {
+    return (
+      <ModalityCard tone="input" label="File">
+        <TouchableOpacity style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+          <Text style={styles.icon}>📁</Text>
+          <Text style={styles.collapsedText}>Tap to upload file</Text>
+        </TouchableOpacity>
+      </ModalityCard>
+    );
+  }
+
   return (
     <ModalityCard tone="input" label="File">
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>File Input</Text>
+          <TouchableOpacity onPress={() => setIsExpanded(false)} style={styles.collapseButton}>
+            <Text style={styles.collapseButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
         {selectedFile ? (
           <View style={styles.fileContainer}>
             <View style={styles.fileInfo}>
@@ -83,9 +103,22 @@ export default function FileInputCard({ onFileSelect }: FileInputCardProps) {
                 )}
               </View>
             </View>
-            <TouchableOpacity style={styles.clearButton} onPress={clearFile}>
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
+            <View style={styles.fileActions}>
+              <TouchableOpacity style={styles.clearButton} onPress={clearFile}>
+                <Text style={styles.clearButtonText}>✕</Text>
+              </TouchableOpacity>
+              {onSend && (
+                <TouchableOpacity 
+                  style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
+                  onPress={!isSending ? onSend : undefined}
+                  disabled={isSending}
+                >
+                  <Text style={styles.sendButtonText}>
+                    {isSending ? 'Sending...' : 'Send ➤'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         ) : (
           <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
@@ -100,8 +133,41 @@ export default function FileInputCard({ onFileSelect }: FileInputCardProps) {
 }
 
 const styles = StyleSheet.create({
+  collapsedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    minHeight: 150,
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  collapsedText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
   container: {
     minHeight: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  collapseButton: {
+    padding: 4,
+  },
+  collapseButtonText: {
+    fontSize: 18,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   uploadButton: {
     alignItems: 'center',
@@ -172,5 +238,24 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  fileActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sendButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
 });

@@ -5,9 +5,12 @@ import ModalityCard from '../../ui/ModalityCard';
 
 export type DrawingInputCardProps = {
   onDrawingComplete?: (svgPath: string) => void;
+  onSend?: () => void;
+  isSending?: boolean;
 };
 
-export default function DrawingInputCard({ onDrawingComplete }: DrawingInputCardProps) {
+export default function DrawingInputCard({ onDrawingComplete, onSend, isSending = false }: DrawingInputCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [paths, setPaths] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState<string>('');
   const [currentColor, setCurrentColor] = useState('#000000');
@@ -54,9 +57,26 @@ export default function DrawingInputCard({ onDrawingComplete }: DrawingInputCard
   const colors = ['#000000', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
   const sizes = [2, 3, 5, 8];
 
+  if (!isExpanded) {
+    return (
+      <ModalityCard tone="input" label="Drawing">
+        <TouchableOpacity style={styles.collapsedContainer} onPress={() => setIsExpanded(true)}>
+          <Text style={styles.icon}>✏️</Text>
+          <Text style={styles.collapsedText}>Tap to draw</Text>
+        </TouchableOpacity>
+      </ModalityCard>
+    );
+  }
+
   return (
     <ModalityCard tone="input" label="Drawing">
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Drawing</Text>
+          <TouchableOpacity onPress={() => setIsExpanded(false)} style={styles.collapseButton}>
+            <Text style={styles.collapseButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.toolbar}>
           <View style={styles.colorPalette}>
             {colors.map(color => (
@@ -139,6 +159,17 @@ export default function DrawingInputCard({ onDrawingComplete }: DrawingInputCard
           <TouchableOpacity style={styles.actionButton} onPress={clearCanvas}>
             <Text style={styles.actionText}>🗑️ Clear</Text>
           </TouchableOpacity>
+          {onSend && paths.length > 0 && (
+            <TouchableOpacity 
+              style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
+              onPress={!isSending ? onSend : undefined}
+              disabled={isSending}
+            >
+              <Text style={styles.sendButtonText}>
+                {isSending ? 'Sending...' : 'Send ➤'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </ModalityCard>
@@ -146,8 +177,41 @@ export default function DrawingInputCard({ onDrawingComplete }: DrawingInputCard
 }
 
 const styles = StyleSheet.create({
+  collapsedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    minHeight: 150,
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  collapsedText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
   container: {
     minHeight: 300,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  collapseButton: {
+    padding: 4,
+  },
+  collapseButtonText: {
+    fontSize: 18,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   toolbar: {
     paddingVertical: 10,
@@ -234,5 +298,19 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     color: '#374151',
+  },
+  sendButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
 });
